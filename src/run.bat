@@ -1,1 +1,1 @@
-..\fasm\fasm boot.asm boot.bios.bin
+..\fasm\fasm boot.asm ..\vm\bin\boot.bios.bin
