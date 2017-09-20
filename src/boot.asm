@@ -1,4 +1,4 @@
- ; Начальный загрузчик ядра для архитектуры x86
+; Начальный загрузчик ядра для архитектуры x86
 format Binary as "bin"
 org 0x7C00
 	jmp boot
@@ -38,13 +38,13 @@ boot_file_name db "boot.bin",0
 write_str:
 	push si
 	mov ah, 0x0E
- @@:
+ @:
 	lodsb
 	test al, al
 	jz @f
 	int 0x10
 	jmp @b
- @@:
+ @:
 	pop si
 	ret
 ; Критическая ошибка
@@ -60,9 +60,12 @@ reboot:
 	jmp 0xFFFF:0
 ; Загрузка сектора DX:AX в буфер ES:DI
 load_sector:
+	push dx
+	add ax, word[fs_base]
+	adc dx, word[fs_base + 2]
 	cmp byte[sector_per_track], 0xFF
 	je .use_EDD
-	push bx cx dx si
+	push bx cx si
 	div [sector_per_track]
 	mov cl, dl
 	inc cl
@@ -73,7 +76,7 @@ load_sector:
 	mov bx, di
 	mov al, 1
 	mov si, 3
- @@:
+ @:
 	mov ah, 2
 	int 0x13
 	jnc @f
@@ -84,11 +87,11 @@ load_sector:
  .error:
 	call error
 	db "DISK ERROR",13,10,0
- @@:
-	pop si dx cx bx
+ @:
+	pop si cx bx dx
 	ret
  .use_EDD:
-	push dx si
+	push si
 	mov byte[0x600], 0x10
 	mov byte[0x601], 0
 	mov word[0x602], 1
@@ -117,7 +120,7 @@ find_file:
  .not_found:
 	call error
 	db "NOT FOUND",13,10,0
- @@:
+ @:
 	mov di, f_info
 	call load_sector
 	push di
@@ -154,7 +157,7 @@ load_file_data:
 	sub ax, bx
 	shr ax, 9 - 4
 	ret
- @@:
+ @:
 	mov di, 0x8000 / 16
 	call load_sector
 	mov si, di
@@ -167,7 +170,7 @@ load_file_data:
 	jne @f
 	cmp dx, -1
 	je .file_end	
- @@:
+ @:
 	push es
 	mov es, bx
 	xor di, di
@@ -182,7 +185,7 @@ load_file_data:
 boot:
 	; Настроим сегментные регистры
 	jmp 0:@f
- @@:
+ @:
 	mov ax, cs
 	mov ds, ax
 	mov es, ax
@@ -200,7 +203,7 @@ boot:
 	jc @f
 	mov byte[sector_per_track], 0xFF
 	jmp .disk_detected
- @@:
+ @:
 	mov ah, 0x08
 	xor di, di
 	push es
@@ -228,15 +231,20 @@ db 0x55,0xAA
 load_msg_preffix db "Loading '",0
 load_msg_suffix db "'...",0
 ok_msg db "OK",13,10,0
+config_file_name db "boot.cfg",0
+start16_msg db "Starting 16 bit kernel...",13,10,0
+start64_msg db "Starting 64 bit kernel...",13,10,0
 ; Разбиение строки DS:SI по символу слеша
 split_file_name:
 	push si
- @@:
+ @:
 	lodsb
 	cmp al, "/"
 	je @f
+	test al, al
+	jz @f
 	jmp @b
- @@:
+ @:
 	mov byte[si - 1], 0
 	mov ax, si
 	pop si
@@ -255,7 +263,7 @@ load_file:
 	push si bp
 	mov dx, word[fs_first_file + 2]
 	mov ax, word[fs_first_file]
- @@:
+ @:
 	push ax
 	call split_file_name
 	mov bp, ax
@@ -267,7 +275,7 @@ load_file:
 	mov dx, word[f_data + 2]
 	mov ax, word[f_data]
 	jmp @b	
- @@:
+ @:
 	call load_file_data
 	mov si, ok_msg
 	call write_str
@@ -275,5 +283,109 @@ load_file:
 	ret
 ; Продолжение начального загрузчика
 boot2:
+	; Загрузим конфигурационный файл загрузчика
+	mov si, config_file_name
+	mov bx, 0x1000 / 16
+	call load_file
+	; Выполним загрузочный скрипт
+	mov bx, 0x9000 / 16
+	mov bp, 0x6000
+	mov dx, 0x1000
+ .parse_line:
+	mov si, dx
+ .parse_char:
+	lodsb
+	test al, al
+	jz .config_end
+	cmp al, 10
+	je .run_command
+	cmp al, 13
+	je .run_command
+	jmp .parse_char
+ .run_command:
+	mov byte[si - 1], 0
+	xchg dx, si
+	cmp byte[si], 0
+	je .parse_line ; Пустая строка
+	cmp byte[si], "#"
+	je .parse_line ; Комментарий
+	cmp byte[si], "L"
+	je .load_file ; Загрузка файла
+	cmp byte[si], "S"
+	je .start ; Запуск ядра
+	; Неизвестная команда
+	mov al, [si]
+	mov [.cmd], al
+	call error
+	db "Unknown boot script command '"
+	.cmd db ?
+	db "'!",13,10,0
+ .config_end: ; При правильном конфигурационном файле мы не должны сюда попасть
 	; Завершение
 	jmp reboot
+; Загрузка файла
+ .load_file:
+	push dx
+	inc si
+	call load_file
+	push ax
+	mov cx, 512
+	mul cx
+	mov word[bp + 8], ax
+	mov word[bp + 10], dx
+	mov word[bp + 12], 0
+	mov word[bp + 14], 0
+	mov ax, bx
+	mov cx, 16
+	mul cx
+	mov word[bp], ax
+	mov word[bp + 2], dx
+	mov word[bp + 4], 0
+	mov word[bp + 6], 0
+	pop ax
+	shr ax, 9 - 4
+	add bx, ax
+	add bp, 16
+	pop dx
+	jmp .parse_line
+; Запуск ядра
+ .start:
+	; Проверим, что загружен хотя бы один файл
+	cmp bx, 0x9000 / 16
+	ja @f
+	call error
+	db "NO KERNEL LOADED",13,10,0	
+ @:
+	; Заполняем последний элемент списка файлов
+	xor ax, ax
+	mov cx, 16
+	mov di, bp
+	rep stosw
+	; Переходим к процедуре инициализации ядра для нужной разрядности
+	inc si
+	cmp word[si], "16"
+	je .start16
+	cmp word[si], "32"
+	je .start32
+	cmp word[si], "64"
+	je .start64
+	; Неизвестная рязрядность ядра
+	call error
+	db "Invalid start command argument",13,10,0
+; Запуск 16-разрядного ядра
+ .start16:
+	mov si, start16_msg
+	mov bx, 0x6000
+	mov dl, [disk_id]
+	jmp 0x9000
+; Запуск 32-разрядного ядра
+ .start32:
+	call error
+	db "Starting 32 bit kernels is not implemented yet",13,10,0
+; Запуск 64-разрядного ядра
+ .start64:
+	; Выводим уведомление о запуске 64-битного ядра
+	mov si, start64_msg
+	call write_str
+	;
+	jmp reboot 
