@@ -1,5 +1,3 @@
-; Начальный загрузчик ядра для архитектуры x86
-format Binary as "bin"
 org 0x7C00
 	jmp boot
 ; Заголовок ListFS
@@ -233,7 +231,7 @@ load_msg_suffix db "'...",0
 ok_msg db "OK",13,10,0
 config_file_name db "boot.cfg",0
 start16_msg db "Starting 16 bit kernel...",13,10,0
-start64_msg db "Starting 64 bit kernel...",13,10,0
+start32_msg db "Starting 32 bit kernel...",13,10,0
 ; Разбиение строки DS:SI по символу слеша
 split_file_name:
 	push si
@@ -367,8 +365,8 @@ boot2:
 	je .start16
 	cmp word[si], "32"
 	je .start32
-	cmp word[si], "64"
-	je .start64
+	;cmp word[si], "64"
+	;je start64
 	; Неизвестная рязрядность ядра
 	call error
 	db "Invalid start command argument",13,10,0
@@ -380,12 +378,51 @@ boot2:
 	jmp 0x9000
 ; Запуск 32-разрядного ядра
  .start32:
-	call error
-	db "Starting 32 bit kernels is not implemented yet",13,10,0
-; Запуск 64-разрядного ядра
- .start64:
-	; Выводим уведомление о запуске 64-битного ядра
-	mov si, start64_msg
+	; Выводим уведомление о запуске 32-битного ядра
+	mov si, start32_msg
 	call write_str
-	;
-	jmp reboot 
+	; Проверим, что процессор не хуже i386
+	mov ax, 0x7202
+	push ax
+	popf
+	pushf
+	pop bx
+	cmp ax, bx
+	je @f
+	call error
+	db "Required i386 or better",13,10,0	
+ @:
+	; Загрузим значение в GDTR
+	lgdt [gdtr32]
+	; Запретим прерывания
+	cli
+	; Перейдём в защищённый режим
+	mov eax, cr0
+	or eax, 1
+	mov cr0, eax
+	; Перейдём на 32-битный код
+	jmp 8:start32
+; Таблица дескрипторов сегментов для 32-битного ядра
+align 16
+gdt32:
+	dq 0                  ; NULL - 0
+	dq 0x00CF9A000000FFFF ; CODE - 8
+	dq 0x00CF92000000FFFF ; DATA - 16
+gdtr32:
+	dw $ - gdt32 - 1
+	dd gdt32
+; 32-битный код
+use32
+start32:
+	; Настроим сегментные регистры и стек
+	mov eax, 16
+	mov ds, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
+	mov ss, ax
+	movzx esp, sp
+	; Выводим символ на экран
+	mov byte[0xB8000 + (25 * 80 - 1) * 2], "!"
+	; Завершение
+	jmp $ 
