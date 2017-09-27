@@ -1,6 +1,15 @@
-".\third party\fasm\fasm" src\boot.asm .\bin\boot.bios.bin
+mingw32-make -C src
+copy /y src\boot\boot.bios.bin bin\
+copy /y src\kernel\kernel.bin bin\
+copy /y src\make_listfs\make_listfs.exe bin\
 
-".\third party\dd" if=.\bin\boot.bios.bin of=.\bin\boot_sector.bin bs=512 count=1
-".\third party\dd" if=.\bin\boot.bios.bin of=.\disk\boot.bin bs=1 skip=512
+dd if=bin\boot.bios.bin of=bin\boot_sector.bin bs=512 count=1
+dd if=bin\boot.bios.bin of=disk\boot.bin bs=1 skip=512
 
-.\src\tools\make_listfs of=.\bin\disk.img bs=512 size=2880 boot=.\bin\boot_sector.bin src=.\disk
+copy /y bin\kernel.bin disk\system\kernel.bin
+
+bin\make_listfs of=disk.img bs=512 size=2880 boot=bin\boot_sector.bin src=.\disk 
+move /y disk.img disk\disk.img
+copy /y src\boot.cfg disk\boot.cfg
+
+echo "Press Enter to continue..."
