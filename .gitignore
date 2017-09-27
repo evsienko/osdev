@@ -4,3 +4,5 @@ fasm
 /src/kernel/*.o
 /third party/make_listfs.exe
 /third party/setup.exe
+/bin/make_listfs.exe
+/disk/disk.img
