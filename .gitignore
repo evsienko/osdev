@@ -1,3 +1,6 @@
 fasm
 *.bin
 /bin/*.img
+/src/kernel/*.o
+/third party/make_listfs.exe
+/third party/setup.exe
