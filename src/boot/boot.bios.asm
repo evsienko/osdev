@@ -1,3 +1,5 @@
+; Начальный загрузчик ядра для архитектуры x86
+format Binary as "bin"
 org 0x7C00
 	jmp boot
 ; Заголовок ListFS
@@ -36,13 +38,13 @@ boot_file_name db "boot.bin",0
 write_str:
 	push si
 	mov ah, 0x0E
- @:
+ @@:
 	lodsb
 	test al, al
 	jz @f
 	int 0x10
 	jmp @b
- @:
+ @@:
 	pop si
 	ret
 ; Критическая ошибка
@@ -74,7 +76,7 @@ load_sector:
 	mov bx, di
 	mov al, 1
 	mov si, 3
- @:
+ @@:
 	mov ah, 2
 	int 0x13
 	jnc @f
@@ -85,7 +87,7 @@ load_sector:
  .error:
 	call error
 	db "DISK ERROR",13,10,0
- @:
+ @@:
 	pop si cx bx dx
 	ret
  .use_EDD:
@@ -118,7 +120,7 @@ find_file:
  .not_found:
 	call error
 	db "NOT FOUND",13,10,0
- @:
+ @@:
 	mov di, f_info
 	call load_sector
 	push di
@@ -155,7 +157,7 @@ load_file_data:
 	sub ax, bx
 	shr ax, 9 - 4
 	ret
- @:
+ @@:
 	mov di, 0x8000 / 16
 	call load_sector
 	mov si, di
@@ -168,7 +170,7 @@ load_file_data:
 	jne @f
 	cmp dx, -1
 	je .file_end	
- @:
+ @@:
 	push es
 	mov es, bx
 	xor di, di
@@ -183,7 +185,7 @@ load_file_data:
 boot:
 	; Настроим сегментные регистры
 	jmp 0:@f
- @:
+ @@:
 	mov ax, cs
 	mov ds, ax
 	mov es, ax
@@ -201,7 +203,7 @@ boot:
 	jc @f
 	mov byte[sector_per_track], 0xFF
 	jmp .disk_detected
- @:
+ @@:
 	mov ah, 0x08
 	xor di, di
 	push es
@@ -232,17 +234,19 @@ ok_msg db "OK",13,10,0
 config_file_name db "boot.cfg",0
 start16_msg db "Starting 16 bit kernel...",13,10,0
 start32_msg db "Starting 32 bit kernel...",13,10,0
+label module_list at 0x6000
+label memory_map at 0x7000
 ; Разбиение строки DS:SI по символу слеша
 split_file_name:
 	push si
- @:
+ @@:
 	lodsb
 	cmp al, "/"
 	je @f
 	test al, al
 	jz @f
 	jmp @b
- @:
+ @@:
 	mov byte[si - 1], 0
 	mov ax, si
 	pop si
@@ -261,7 +265,7 @@ load_file:
 	push si bp
 	mov dx, word[fs_first_file + 2]
 	mov ax, word[fs_first_file]
- @:
+ @@:
 	push ax
 	call split_file_name
 	mov bp, ax
@@ -273,11 +277,65 @@ load_file:
 	mov dx, word[f_data + 2]
 	mov ax, word[f_data]
 	jmp @b	
- @:
+ @@:
 	call load_file_data
 	mov si, ok_msg
 	call write_str
 	pop bp si
+	ret
+; Получение карты памяти
+get_memory_map:
+	mov di, memory_map
+	xor ebx, ebx
+ @@:
+	mov eax, 0xE820
+	mov edx, 0x534D4150
+	mov ecx, 24
+	mov dword[di + 20], 1
+	int 0x15
+	jc @f
+	add di, 24
+	test ebx, ebx
+	jnz @b
+ @@:
+	cmp di, 0x7000
+	ja .ok
+	mov dword[di], 0x100000
+	mov dword[di + 4], 0
+	mov dword[di + 12], 0
+	mov dword[di + 16], 1
+	mov dword[di + 20], 0
+	mov ax, 0xE801
+	int 0x15
+	jnc @f
+	mov ah, 0x88
+	int 0x15
+	jc .ok
+	mov cx, ax
+	xor dx, dx
+ @@:
+	test cx, cx
+	jz @f
+	mov ax, cx
+	mov bx, dx
+ @@:
+	movzx eax, ax
+	movzx ebx, bx
+	mov ecx, 1024
+	mul ecx
+	push eax
+	mov eax, ebx
+	mov ecx, 65536
+	mul ecx
+	pop edx
+	add eax, edx
+	mov [di + 8], eax
+	add di, 24
+	jmp .ok
+ .ok:
+	xor ax, ax
+	mov cx, 24 / 2
+	rep stosw
 	ret
 ; Продолжение начального загрузчика
 boot2:
@@ -287,7 +345,7 @@ boot2:
 	call load_file
 	; Выполним загрузочный скрипт
 	mov bx, 0x9000 / 16
-	mov bp, 0x6000
+	mov bp, module_list
 	mov dx, 0x1000
  .parse_line:
 	mov si, dx
@@ -353,7 +411,7 @@ boot2:
 	ja @f
 	call error
 	db "NO KERNEL LOADED",13,10,0	
- @:
+ @@:
 	; Заполняем последний элемент списка файлов
 	xor ax, ax
 	mov cx, 16
@@ -366,14 +424,14 @@ boot2:
 	cmp word[si], "32"
 	je .start32
 	;cmp word[si], "64"
-	;je start64
+	;je .start64
 	; Неизвестная рязрядность ядра
 	call error
 	db "Invalid start command argument",13,10,0
 ; Запуск 16-разрядного ядра
  .start16:
 	mov si, start16_msg
-	mov bx, 0x6000
+	mov bx, module_list
 	mov dl, [disk_id]
 	jmp 0x9000
 ; Запуск 32-разрядного ядра
@@ -391,14 +449,47 @@ boot2:
 	je @f
 	call error
 	db "Required i386 or better",13,10,0	
- @:
+ @@:
+	; Получим карту памяти
+	call get_memory_map
+	; Очистим таблицы страниц
+	xor ax, ax
+	mov cx, 3 * 4096 / 2
+	mov di, 0x1000
+	rep stosw
+	; Заполним каталог страниц
+	mov word[0x1000], 0x2000 + 111b
+	mov word[0x1FFC], 0x3000 + 111b
+	; Заполним первую таблицу страниц
+	mov eax, 11b
+	mov cx, 0x100000 / 4096
+	mov di, 0x2000
+ @@:
+	stosd
+	add eax, 0x1000
+	loop @b
+	; Заполним последнюю таблицу страниц
+	mov di, 0x3000
+	mov eax, dword[module_list]
+	or eax, 11b
+	mov ecx, dword[module_list + 8]
+	shr ecx, 12
+ @@:
+	stosd
+	add eax, 0x1000
+	loop @b
+	mov word[0x3FF4], 0x4000 + 11b ; Kernel stack
+	mov word[0x3FF8], 0x3000 + 11b ; Kernel page table
+	; Загрузим значение в CR3
+	mov eax, 0x1000
+	mov cr3, eax
 	; Загрузим значение в GDTR
 	lgdt [gdtr32]
 	; Запретим прерывания
 	cli
 	; Перейдём в защищённый режим
 	mov eax, cr0
-	or eax, 1
+	or eax, 0x80000001
 	mov cr0, eax
 	; Перейдём на 32-битный код
 	jmp 8:start32
@@ -421,8 +512,12 @@ start32:
 	mov fs, ax
 	mov gs, ax
 	mov ss, ax
-	movzx esp, sp
-	; Выводим символ на экран
-	mov byte[0xB8000 + (25 * 80 - 1) * 2], "!"
-	; Завершение
-	jmp $ 
+	mov esp, 0xFFFFDFFC
+	; Поместим в DL номер загрузочного диска
+	mov dl, [disk_id]
+	; Поместим в EBX адрес списка загруженных файлов
+	mov ebx, module_list
+	; Поместим в ESI адрес карты памяти
+	mov esi, memory_map
+	; Переходим на ядро
+	jmp 0xFFC00000 
