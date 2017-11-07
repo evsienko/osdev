@@ -1,0 +1,2 @@
+write_str  b 0x7c63
+run_command b 0x7f7d
