@@ -1,4 +1,5 @@
 #include "stdlib.h"
+#include "interrupts.h"
 #include "tty.h"
 
 typedef struct {
@@ -6,8 +7,8 @@ typedef struct {
 	uint64 size;
 } BootModuleInfo;
 
-void kernel_main(uint8 boot_disk_id,
-	void *memory_map, BootModuleInfo *boot_module_list) {
+void kernel_main(uint8 boot_disk_id, void *memory_map, BootModuleInfo *boot_module_list) {
+		init_interrupts();
 		init_tty();
 		set_text_attr(0x1F);
 		clear_screen();

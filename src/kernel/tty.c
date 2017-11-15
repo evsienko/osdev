@@ -1,5 +1,6 @@
 #include <stdarg.h>
 #include "stdlib.h"
+#include "interrupts.h"
 #include "tty.h"
 
 typedef struct {
@@ -14,6 +15,8 @@ uint8 text_attr;
 TtyChar *tty_buffer;
 uint16 tty_io_port;
 
+void keyboard_int_handler();
+
 void init_tty() {
 	tty_buffer = (void*)0xB8000;
 	tty_width = *((uint16*)0x44A);
@@ -21,6 +24,7 @@ void init_tty() {
 	tty_io_port = *((uint16*)0x463);
 	cursor = (*((uint8*)0x451)) * tty_width + (*((uint8*)0x450));
 	text_attr = 7;
+	set_int_handler(irq_base + 1, keyboard_int_handler, 0x8E);
 }
 
 void out_char(char chr) {
@@ -113,4 +117,14 @@ void printf(char *fmt, ...) {
 		fmt++;
 	}
 	va_end(args);
+} 
+
+IRQ_HANDLER(keyboard_int_handler) {
+	uint8 key_code;
+	inportb(0x60, key_code);
+	printf("You pressed key with code %d\n", key_code);
+	uint8 status;
+	inportb(0x61, status);
+	status |= 1;
+	outportb(0x61, status);
 } 
