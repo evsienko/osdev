@@ -5,9 +5,9 @@
 #include "scancodes.h"
 
 #define KEY_BUFFER_SIZE 16
-char key_buffer[KEY_BUFFER_SIZE];
-unsigned int key_buffer_head = 0;
-unsigned int key_buffer_tail = 0; 
+volatile char key_buffer[KEY_BUFFER_SIZE];
+volatile unsigned int key_buffer_head = 0;
+volatile unsigned int key_buffer_tail = 0;
 
 typedef struct {
 	uint8 chr;

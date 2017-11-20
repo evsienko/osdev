@@ -23,7 +23,7 @@ void init_interrupts() {
 	map_pages(kernel_page_dir, idt, alloc_phys_pages(1), 1, PAGE_VALID | PAGE_WRITABLE);
 	*((size_t*)0xFFFFEFF0) = 0x8000 | 3;
 	memset(idt, 0, 256 * sizeof(IntDesc));
-	IDTR idtr = {256 * sizeof(IntDesc), idt};
+	volatile IDTR idtr = {256 * sizeof(IntDesc), idt};
 	asm("lidt (,%0,)"::"a"(&idtr));
 	irq_base = 0x20;
 	irq_count = 16;
@@ -40,13 +40,14 @@ void init_interrupts() {
 }
 
 void set_int_handler(uint8 index, void *handler, uint8 type) {
-	asm("pushf \n cli");
+	size_t saved_flags;
+	asm("pushf \n popl %0 \n cli":"=a"(saved_flags));
 	idt[index].selector = 8;
 	idt[index].address_0_15 = (size_t)handler & 0xFFFF;
 	idt[index].address_16_31 = (size_t)handler >> 16;
 	idt[index].type = type;
 	idt[index].reserved = 0;
-	asm("popf"); 
+	asm("pushl %0 \n popf"::"a"(saved_flags));
 }
 
 IRQ_HANDLER(timer_int_handler) {
