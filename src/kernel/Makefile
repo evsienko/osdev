@@ -17,4 +17,4 @@ interrupts.o: interrupts.c interrupts.h stdlib.h
 tty.o: tty.c tty.h stdlib.h
 	gcc -c $(CFLAGS) -o tty.o tty.c
 clean:
-	del -v *.o kernel.bin
+	rm -v *.o kernel.bin

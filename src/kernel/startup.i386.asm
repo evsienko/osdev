@@ -1,7 +1,7 @@
 format ELF
 
 public _start
-extrn _kernel_main
+extrn kernel_main
 
 section ".text" executable
 
@@ -11,7 +11,7 @@ _start:
 	push esi
 	push edx
 	lgdt [gdtr]
-	call _kernel_main
+	call kernel_main
         add esp, 3 * 4
  @@:
 	cli
