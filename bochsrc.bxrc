@@ -1,0 +1,12 @@
+#display_library: win32, options="gui_debug"
+ 
+romimage:    file="C:\Program Files (x86)\Bochs-2.6.9\BIOS-bochs-latest"
+vgaromimage: file="C:\Program Files (x86)\Bochs-2.6.9\VGABIOS-lgpl-latest"
+
+megs: 64
+boot: floppy
+floppya: 1_44="C:\data\os dev new\floppy.img", status=inserted 
+
+log:         OSDev.log             # All errors and info logs will output to OSDev.log
+error:       action=report 
+info:        action=report
