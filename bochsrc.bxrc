@@ -7,6 +7,6 @@ megs: 64
 boot: floppy
 floppya: 1_44="C:\data\os dev new\floppy.img", status=inserted 
 
-log:         OSDev.log             # All errors and info logs will output to OSDev.log
+log:         bin\OSDev.log             # All errors and info logs will output to OSDev.log
 error:       action=report 
 info:        action=report
