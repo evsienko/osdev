@@ -5,7 +5,7 @@ vgaromimage: file="C:\Program Files (x86)\Bochs-2.6.9\VGABIOS-lgpl-latest"
 
 megs: 64
 boot: floppy
-floppya: 1_44="C:\data\os dev new\floppy.img", status=inserted 
+floppya: 1_44="C:\data\os dev\floppy.img", status=inserted 
 
 log:         bin\OSDev.log             # All errors and info logs will output to OSDev.log
 error:       action=report 

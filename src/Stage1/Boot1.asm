@@ -225,8 +225,6 @@ main:
      
      ; save starting cluster of boot image
      
-          mov     si, msgCRLF
-          call    Print
           mov     dx, WORD [di + 0x001A]
           mov     WORD [cluster], dx                  ; file's first cluster
           
@@ -248,8 +246,6 @@ main:
 
      ; read image file into memory (0050:0000)
      
-          mov     si, msgCRLF
-          call    Print
           mov     ax, 0x0050
           mov     es, ax                              ; destination for image
           mov     bx, 0x0000                          ; destination for image
@@ -317,7 +313,7 @@ main:
      datasector  dw 0x0000
      cluster     dw 0x0000
      ImageName   db "KRNLDR  SYS"
-     msgLoading  db 0x0D, 0x0A, "Loading Boot Image ", 0x0D, 0x0A, 0x00
+     msgLoading  db 0x0D, 0x0A, "Loading Boot Image ", 0x00
      msgCRLF     db 0x0D, 0x0A, 0x00
      msgProgress db ".", 0x00
      msgFailure  db 0x0D, 0x0A, "MISSING OR CURRUPT KRNLDR. Press Any Key to Reboot", 0x0D, 0x0A, 0x00
