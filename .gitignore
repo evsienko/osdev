@@ -1,1 +1,6 @@
 /bin
+/src/SysCore/.vs
+/src/SysCore/debug
+/src/SysCore/Lib/Debug
+/src/SysCore/Kernel/Debug
+/src/SysCore/Kernel/*.user

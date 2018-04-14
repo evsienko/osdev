@@ -9,7 +9,7 @@
 %define IMAGE_RMODE_BASE 0x3000
 
 ; kernel name (Must be 11 bytes)
-ImageName     db "KRNL    SYS"
+ImageName     db "KRNL32  EXE"
 
 ; size of kernel image in bytes
 ImageSize     db 0
