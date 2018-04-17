@@ -169,6 +169,18 @@
 	<References>
 	</References>
 	<Files>
+		<Filter
+			Name="Debug"
+			>
+			<File
+				RelativePath=".\DebugDisplay.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\DebugDisplay.h"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath=".\entry.cpp"
 			>

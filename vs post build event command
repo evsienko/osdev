@@ -1,0 +1,3 @@
+cd "$(SolutionDir)"
+cd "$(SolutionDir)..\..\"
+call "build.bat"

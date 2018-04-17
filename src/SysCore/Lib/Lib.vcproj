@@ -36,7 +36,12 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalIncludeDirectories="..\Include\"
 				PreprocessorDefinitions="ARCH_X86"
+				IgnoreStandardIncludePath="true"
+				ExceptionHandling="0"
+				StructMemberAlignment="1"
+				BufferSecurityCheck="false"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -132,6 +137,10 @@
 	<Files>
 		<File
 			RelativePath=".\cstd.cpp"
+			>
+		</File>
+		<File
+			RelativePath=".\string.cpp"
 			>
 		</File>
 	</Files>
