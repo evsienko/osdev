@@ -26,8 +26,8 @@ void _cdecl main () {
 
 	DebugGotoXY (25,8);
 	DebugSetColor (0x1F);
-	//DebugPrintf ("\n[%i]",i);
-	//DebugPrintf ("\n[0x%x]",i);
+	DebugPrintf ("\n[%i]",i);
+	DebugPrintf ("\n[0x%x]",i);
 
 	DebugGotoXY (4,16);
 	DebugSetColor (0x1F);
