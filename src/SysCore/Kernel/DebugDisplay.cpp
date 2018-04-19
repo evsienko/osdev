@@ -104,7 +104,8 @@ void itoa(unsigned i,unsigned base,char* buf) {
 }
 
 void itoa_s(int i,unsigned base,char* buf) {
-   if (base > 16) return;
+   if (base > 16) 
+	   return;
    if (i < 0) {
       *buf++ = '-';
       i *= -1;
@@ -194,7 +195,7 @@ int DebugPrintf (const char* str, ...) {
 					case 'd':
 					case 'i': {
 						int c = va_arg (args, int);
-						char str[32]={0};
+						char str[7]={0};
 						itoa_s (c, 10, str);
 						DebugPuts (str);
 						i++;		// go to next character
@@ -205,7 +206,7 @@ int DebugPrintf (const char* str, ...) {
 					case 'X':
 					case 'x': {
 						int c = va_arg (args, int);
-						char str[32]={0};
+						char str[7]={0};
 						itoa_s (c,16,str);
 						DebugPuts (str);
 						i++;		// go to next character
