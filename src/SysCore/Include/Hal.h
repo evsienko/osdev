@@ -1,13 +1,22 @@
-#ifndef _DEBUGDISPLAY_H
-#define _DEBUGDISPLAY_H
+#ifndef _HAL_H
+#define _HAL_H
 //****************************************************************************
 //**
-//**    DebugDisplay.h
-//**    - Provides display capabilities for debugging. Because it is
-//**	  specifically for debugging and not final release, we don't
-//** 	  care for portability here
+//**    Hal.h
+//**		Hardware Abstraction Layer Interface
+//**
+//**	The Hardware Abstraction Layer (HAL) provides an abstract interface
+//**	to control the basic motherboard hardware devices. This is accomplished
+//**	by abstracting hardware dependencies behind this interface.
+//**
+//**	All routines and types are declared extern and must be defined within
+//**	external libraries to define specific hal implimentations.
 //**
 //****************************************************************************
+
+#ifndef ARCH_X86
+#pragma error "HAL not implimented for this platform"
+#endif
 
 //============================================================================
 //    INTERFACE REQUIRED HEADERS
@@ -18,6 +27,16 @@
 //============================================================================
 //    INTERFACE DEFINITIONS / ENUMERATIONS / SIMPLE TYPEDEFS
 //============================================================================
+
+#ifdef _MSC_VER
+#define interrupt __declspec (naked)
+#else
+#define interrupt
+#endif
+
+#define far
+#define near
+
 //============================================================================
 //    INTERFACE CLASS PROTOTYPES / EXTERNAL CLASS REFERENCES
 //============================================================================
@@ -31,12 +50,14 @@
 //    INTERFACE FUNCTION PROTOTYPES
 //============================================================================
 
-extern void DebugPutc (unsigned char c);
-extern void DebugClrScr (const uint8_t c);
-extern void DebugPuts (char* str);
-extern int DebugPrintf (const char* str, ...);
-extern unsigned DebugSetColor (const unsigned c);
-extern void DebugGotoXY (unsigned x, unsigned y);
+//! initialize hardware abstraction layer
+extern	int				_cdecl	hal_initialize ();
+
+//! shutdown hardware abstraction layer
+extern	int				_cdecl	hal_shutdown ();
+
+//! generates interrupt
+extern	void			_cdecl	geninterrupt (int n);
 
 //============================================================================
 //    INTERFACE OBJECT CLASS DEFINITIONS
@@ -46,7 +67,7 @@ extern void DebugGotoXY (unsigned x, unsigned y);
 //============================================================================
 //****************************************************************************
 //**
-//**    END [FILE NAME]
+//**    END [Hal.h]
 //**
 //****************************************************************************
 #endif

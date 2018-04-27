@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="Lib"
-	ProjectGUID="{520F8072-F995-4C60-9F50-BD300F913D7F}"
+	Name="Hal"
+	ProjectGUID="{F9978721-33F3-494B-9AF6-7B88F8606D23}"
 	>
 	<Platforms>
 		<Platform
@@ -38,7 +38,7 @@
 				Name="VCCLCompilerTool"
 				OmitFramePointers="true"
 				AdditionalIncludeDirectories="..\Include\"
-				PreprocessorDefinitions="ARCH_X86"
+				PreprocessorDefinitions="ARCH_X86;_DEBUG"
 				IgnoreStandardIncludePath="true"
 				ExceptionHandling="0"
 				StructMemberAlignment="1"
@@ -139,15 +139,35 @@
 	</References>
 	<Files>
 		<File
-			RelativePath=".\cstd.cpp"
+			RelativePath=".\cpu.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\stdio.cpp"
+			RelativePath=".\cpu.h"
 			>
 		</File>
 		<File
-			RelativePath=".\string.cpp"
+			RelativePath=".\gdt.cpp"
+			>
+		</File>
+		<File
+			RelativePath=".\gdt.h"
+			>
+		</File>
+		<File
+			RelativePath=".\Hal.cpp"
+			>
+		</File>
+		<File
+			RelativePath=".\idt.cpp"
+			>
+		</File>
+		<File
+			RelativePath=".\idt.h"
+			>
+		</File>
+		<File
+			RelativePath=".\regs.h"
 			>
 		</File>
 	</Files>

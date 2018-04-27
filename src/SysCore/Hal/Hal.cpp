@@ -1,15 +1,26 @@
 
 //****************************************************************************
 //**
-//**    [string.cpp]
-//**    - [Standard C string routine implimentation]
+//**    Hal.cpp
+//**		Hardware Abstraction Layer for i86 architecture
+//**
+//**	The Hardware Abstraction Layer (HAL) provides an abstract interface
+//**	to control the basic motherboard hardware devices. This is accomplished
+//**	by abstracting hardware dependencies behind this interface.
 //**
 //****************************************************************************
+
+#ifndef ARCH_X86
+#error "[hal.cpp for i86] requires i86 architecture. Define ARCH_X86"
+#endif
+
 //============================================================================
 //    IMPLEMENTATION HEADERS
 //============================================================================
 
-#include <string.h>
+#include <Hal.h>
+#include "cpu.h"
+#include "idt.h"
 
 //============================================================================
 //    IMPLEMENTATION PRIVATE DEFINITIONS / ENUMERATIONS / SIMPLE TYPEDEFS
@@ -39,49 +50,31 @@
 //    INTERFACE FUNCTIONS
 //============================================================================
 
-//! warning C4706: assignment within conditional expression
-#pragma warning (disable:4706)
+//! initialize hardware devices
+int _cdecl hal_initialize () {
 
-//! copies string s2 to s1
-char *strcpy(char *s1, const char *s2)
-{
-    char *s1_p = s1;
-    while (*s1++ = *s2++);
-    return s1_p;
+	i86_cpu_initialize ();
+	return 0;
 }
 
-//! returns length of string
-size_t strlen ( const char* str ) {
+//! shutdown hardware devices
+int _cdecl hal_shutdown () {
 
-	size_t	len=0;
-	while (str[len++]);
-	return len;
+	i86_cpu_shutdown ();
+	return 0;
 }
 
-//! copies count bytes from src to dest
-void *memcpy(void *dest, const void *src, size_t count)
-{
-    const char *sp = (const char *)src;
-    char *dp = (char *)dest;
-    for(; count != 0; count--) *dp++ = *sp++;
-    return dest;
-}
-
-//! sets count bytes of dest to val
-void *memset(void *dest, char val, size_t count)
-{
-    unsigned char *temp = (unsigned char *)dest;
-	for( ; count != 0; count--, temp[count] = val);
-	return dest;
-}
-
-//! sets count bytes of dest to val
-unsigned short *memsetw(unsigned short *dest, unsigned short val, size_t count)
-{
-    unsigned short *temp = (unsigned short *)dest;
-    for( ; count != 0; count--)
-		*temp++ = val;
-    return dest;
+//! generate interrupt call
+void _cdecl geninterrupt (int n) {
+#ifdef _MSC_VER
+	_asm {
+		mov al, byte ptr [n]
+		mov byte ptr [genint+1], al
+		jmp genint
+	genint:
+		int 0	// above code modifies the 0 to int number to generate
+	}
+#endif
 }
 
 //============================================================================
@@ -89,6 +82,6 @@ unsigned short *memsetw(unsigned short *dest, unsigned short val, size_t count)
 //============================================================================
 //****************************************************************************
 //**
-//**    END[String.cpp]
+//**    END[Hal.cpp]
 //**
 //****************************************************************************

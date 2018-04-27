@@ -4,3 +4,4 @@
 /src/SysCore/Lib/Debug
 /src/SysCore/Kernel/Debug
 /src/SysCore/Kernel/*.user
+/src/SysCore/Hal/Debug

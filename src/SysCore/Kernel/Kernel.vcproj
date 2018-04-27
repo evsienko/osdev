@@ -3,7 +3,8 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="Kernel"
-	ProjectGUID="{1127FDC6-EBC7-4888-A5B4-DC12222D280A}"
+	ProjectGUID="{3EEB4C94-0534-40F5-BBF1-01C0C0AC5658}"
+	RootNamespace="Kernel"
 	>
 	<Platforms>
 		<Platform
@@ -11,6 +12,9 @@
 		/>
 	</Platforms>
 	<ToolFiles>
+		<DefaultToolFile
+			FileName="masm.rules"
+		/>
 	</ToolFiles>
 	<Configurations>
 		<Configuration
@@ -18,13 +22,16 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			DeleteExtensionsOnClean="*.exp;*.obj;*.ilk;*.tlb;*.tli;*.tlh;*.tmp;*.rsp;*.pgc;*.pgd;$(TargetPath)"
+			DeleteExtensionsOnClean="*.exp *.obj;*.ilk;*.tlb;*.tli;*.tlh;*.tmp;*.rsp;*.pgc;*.pgd;$(TargetPath)"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="MASM"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -38,17 +45,22 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/Oy"
-				Optimization="2"
-				OmitFramePointers="false"
+				Optimization="3"
+				InlineFunctionExpansion="0"
+				EnableIntrinsicFunctions="false"
+				FavorSizeOrSpeed="0"
+				OmitFramePointers="true"
 				AdditionalIncludeDirectories="..\Include\"
-				PreprocessorDefinitions="ARCH_X86"
+				PreprocessorDefinitions="ARCH_X86;_DEBUG"
 				IgnoreStandardIncludePath="true"
+				StringPooling="false"
 				ExceptionHandling="0"
 				StructMemberAlignment="1"
 				BufferSecurityCheck="false"
 				RuntimeTypeInfo="false"
 				AssemblerOutput="4"
 				WarningLevel="4"
+				DebugInformationFormat="0"
 				CallingConvention="0"
 			/>
 			<Tool
@@ -70,13 +82,16 @@
 				AdditionalLibraryDirectories="..\Lib\"
 				GenerateManifest="false"
 				IgnoreAllDefaultLibraries="true"
+				DelayLoadDLLs=""
 				GenerateMapFile="true"
 				MapFileName="Kernel.map"
 				SubSystem="3"
 				Driver="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				FunctionOrder=""
 				EntryPointSymbol="kernel_entry"
+				ResourceOnlyDLL="false"
 				BaseAddress="0x100000"
 				FixedBaseAddress="1"
 			/>
@@ -103,6 +118,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine=""
 			/>
 		</Configuration>
 		<Configuration
@@ -115,6 +131,9 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="MASM"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -170,6 +189,18 @@
 	</References>
 	<Files>
 		<Filter
+			Name="Init"
+			>
+			<File
+				RelativePath=".\entry.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\main.cpp"
+				>
+			</File>
+		</Filter>
+		<Filter
 			Name="Debug"
 			>
 			<File
@@ -181,14 +212,6 @@
 				>
 			</File>
 		</Filter>
-		<File
-			RelativePath=".\entry.cpp"
-			>
-		</File>
-		<File
-			RelativePath=".\main.cpp"
-			>
-		</File>
 		<File
 			RelativePath=".\Resource.rc"
 			>

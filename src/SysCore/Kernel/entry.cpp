@@ -1,43 +1,41 @@
 /*
-====================================================
+=========================================================================
 	entry.cpp
-		-This is the kernel entry point. This is called
-		from the boot loader
-====================================================
+
+	kernel entry point called from bootloader
+=========================================================================
 */
 
-extern void _cdecl main ();
-extern void _cdecl InitializeConstructors();
-extern void _cdecl Exit ();
+extern void __cdecl  InitializeConstructors ();
+extern void __cdecl  Exit ();
+extern int	__cdecl  main ();
 
-void _cdecl kernel_entry () {
+//! kernel entry point is called by boot loader
+void __cdecl  kernel_entry () {
 
 #ifdef ARCH_X86
+
+	// Set registers for protected mode
 	_asm {
-		cli						// clear interrupts--Do not enable them yet
-		mov ax, 10h				// offset 0x10 in gdt for data selector, remember?
+		cli
+		mov ax, 10h
 		mov ds, ax
 		mov es, ax
 		mov fs, ax
 		mov gs, ax
-		mov ss, ax				// Set up base stack
-		mov esp, 0x90000
-		mov ebp, esp			// store current stack pointer
-		push ebp
 	}
-#endif
+#endif //ARCH_X86
 
-	//! Execute global constructors
 	InitializeConstructors();
-
-	//!	Call kernel entry point
 	main ();
-
-	//! Cleanup all dynamic dtors
 	Exit ();
 
 #ifdef ARCH_X86
-	_asm cli
+	_asm {
+		cli
+		hlt
+	}
 #endif
+
 	for (;;);
 }

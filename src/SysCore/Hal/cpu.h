@@ -1,19 +1,29 @@
-#ifndef _DEBUGDISPLAY_H
-#define _DEBUGDISPLAY_H
+#ifndef _CPU_H_INCLUDED
+# define _CPU_H_INCLUDED
 //****************************************************************************
 //**
-//**    DebugDisplay.h
-//**    - Provides display capabilities for debugging. Because it is
-//**	  specifically for debugging and not final release, we don't
-//** 	  care for portability here
+//**    cpu.h
+//**
+//**	This is the processor interface. Everything outside of this module
+//**	must use this interface when working on processor data.
+//**
+//**	A processor is a module that manages the very basic data structures
+//**	and data within the system. The processor interface provides the interface
+//**	for managing processors, processor cores, accessing processor structures,
+//**	and more
 //**
 //****************************************************************************
+
+#ifndef ARCH_X86
+#error "[cpu.h] platform not implimented. Define ARCH_X86 for HAL"
+#endif
 
 //============================================================================
 //    INTERFACE REQUIRED HEADERS
 //============================================================================
 
 #include <stdint.h>
+#include "regs.h"
 
 //============================================================================
 //    INTERFACE DEFINITIONS / ENUMERATIONS / SIMPLE TYPEDEFS
@@ -31,12 +41,11 @@
 //    INTERFACE FUNCTION PROTOTYPES
 //============================================================================
 
-extern void DebugPutc (unsigned char c);
-extern void DebugClrScr (const uint8_t c);
-extern void DebugPuts (char* str);
-extern int DebugPrintf (const char* str, ...);
-extern unsigned DebugSetColor (const unsigned c);
-extern void DebugGotoXY (unsigned x, unsigned y);
+//! initialize the processors
+extern int i86_cpu_initialize ();
+
+//! shutdown the processors
+extern void i86_cpu_shutdown ();
 
 //============================================================================
 //    INTERFACE OBJECT CLASS DEFINITIONS

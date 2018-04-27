@@ -1,36 +1,39 @@
 /*
-======================================
+=========================================================================
 	main.cpp
-		-kernel startup code
-======================================
+
+	main kernel program
+=========================================================================
 */
 
+#include <hal.h>
 #include "DebugDisplay.h"
 
-void _cdecl main () {
-
-	int i=0x12;
-
+int _cdecl main () {
 	DebugClrScr (0x18);
 
-	DebugGotoXY (4,4);
-	DebugSetColor (0x17);
-	DebugPrintf ("+-----------------------------------------+\n");
-	DebugPrintf ("|    MOS 32 Bit C++ Kernel Executing!     |\n");
-	DebugPrintf ("+-----------------------------------------+\n\n");
-	DebugSetColor (0x12);
+	DebugGotoXY (0,0);
+	DebugSetColor (0x70);
+	DebugPrintf (" Microcomputer Operating System (MOS) Preparing to load...                       ");
+	DebugGotoXY (0,1);
+	DebugSetColor (0x19);
+	DebugPrintf (" MOS Starting Up...\n");
 
-	DebugSetColor (0x12);
-	DebugPrintf ("\ni as integer ........................");
-	DebugPrintf ("\ni in hex ............................");
+	DebugSetColor (0x70);
+	DebugGotoXY (0,24);
+	DebugPrintf (" Initializing Hardware Abstraction Layer (HAL.lib)...                           ");
 
-	DebugGotoXY (25,8);
-	DebugSetColor (0x1F);
-	DebugPrintf ("\n[%i]",i);
-	DebugPrintf ("\n[0x%x]",i);
+	DebugSetColor (0x19);
+	DebugGotoXY (0,2);
 
-	DebugGotoXY (4,16);
-	DebugSetColor (0x1F);
-	DebugPrintf ("\n\nI am preparing to load... Hold on, please... :)");
+	hal_initialize ();
 
+//! uncomment to generate interrupt 0x15. This will call the default exception handler
+	geninterrupt (0x15);
+
+
+	return 0;
 }
+
+
+
