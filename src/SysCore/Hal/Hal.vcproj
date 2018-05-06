@@ -159,11 +159,31 @@
 			>
 		</File>
 		<File
+			RelativePath="..\Include\Hal.h"
+			>
+		</File>
+		<File
 			RelativePath=".\idt.cpp"
 			>
 		</File>
 		<File
 			RelativePath=".\idt.h"
+			>
+		</File>
+		<File
+			RelativePath=".\pic.cpp"
+			>
+		</File>
+		<File
+			RelativePath=".\pic.h"
+			>
+		</File>
+		<File
+			RelativePath=".\pit.cpp"
+			>
+		</File>
+		<File
+			RelativePath=".\pit.h"
 			>
 		</File>
 		<File

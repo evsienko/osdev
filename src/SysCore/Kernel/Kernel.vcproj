@@ -213,6 +213,18 @@
 			</File>
 		</Filter>
 		<File
+			RelativePath=".\exception.cpp"
+			>
+		</File>
+		<File
+			RelativePath=".\exception.h"
+			>
+		</File>
+		<File
+			RelativePath=".\panic.cpp"
+			>
+		</File>
+		<File
 			RelativePath=".\Resource.rc"
 			>
 		</File>

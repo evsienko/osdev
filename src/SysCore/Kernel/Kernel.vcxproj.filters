@@ -2,10 +2,10 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Init">
-      <UniqueIdentifier>{1495e189-e0f9-4ae0-a8d1-dd77cf06a2cc}</UniqueIdentifier>
+      <UniqueIdentifier>{4265cd96-ae77-4546-bb00-d5baf8041dfa}</UniqueIdentifier>
     </Filter>
     <Filter Include="Debug">
-      <UniqueIdentifier>{2abe2c16-a140-44d8-a720-5efc8be89e81}</UniqueIdentifier>
+      <UniqueIdentifier>{ffe1af0e-9bcf-4d9d-b28e-eac2adbf84f4}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -18,11 +18,14 @@
     <ClCompile Include="DebugDisplay.cpp">
       <Filter>Debug</Filter>
     </ClCompile>
+    <ClCompile Include="exception.cpp" />
+    <ClCompile Include="panic.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DebugDisplay.h">
       <Filter>Debug</Filter>
     </ClInclude>
+    <ClInclude Include="exception.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resource.rc" />

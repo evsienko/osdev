@@ -60,11 +60,16 @@
     <ClCompile Include="gdt.cpp" />
     <ClCompile Include="Hal.cpp" />
     <ClCompile Include="idt.cpp" />
+    <ClCompile Include="pic.cpp" />
+    <ClCompile Include="pit.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\Include\Hal.h" />
     <ClInclude Include="cpu.h" />
     <ClInclude Include="gdt.h" />
     <ClInclude Include="idt.h" />
+    <ClInclude Include="pic.h" />
+    <ClInclude Include="pit.h" />
     <ClInclude Include="regs.h" />
   </ItemGroup>
   <ItemGroup>

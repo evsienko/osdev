@@ -158,8 +158,7 @@ void DebugClrScr (const uint8_t c) {
 
 	//! clear video memory by writing space characters to it
 	for (int i = 0; i < 80*25; i++)
-		video_memory[i] = ' ' | (0x18 << 8);
-        //video_memory[i] = ' ' | (c << 8);
+        video_memory[i] = ' ' | (c << 8);
 
     //! move position back to start
     DebugGotoXY (0,0);
