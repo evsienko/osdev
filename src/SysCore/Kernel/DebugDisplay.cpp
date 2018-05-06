@@ -158,7 +158,7 @@ void DebugClrScr (const uint8_t c) {
 
 	//! clear video memory by writing space characters to it
 	for (int i = 0; i < 80*25; i++)
-        video_memory[i] = ' ' | (c << 8);
+        video_memory[i] = ' ' | (0x13 << 8);
 
     //! move position back to start
     DebugGotoXY (0,0);
@@ -214,7 +214,7 @@ int DebugPrintf (const char* str, ...) {
 					case 'd':
 					case 'i': {
 						int c = va_arg (args, int);
-						char str[32]={0};
+						char str[32];
 						itoa_s (c, 10, str);
 						DebugPuts (str);
 						i++;		// go to next character
