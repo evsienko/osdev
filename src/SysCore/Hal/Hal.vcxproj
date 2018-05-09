@@ -46,7 +46,7 @@
     <ClCompile>
       <OmitFramePointers>true</OmitFramePointers>
       <AdditionalIncludeDirectories>..\Include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>ARCH_X86;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_X86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <IgnoreStandardIncludePath>true</IgnoreStandardIncludePath>
       <ExceptionHandling />
       <StructMemberAlignment>1Byte</StructMemberAlignment>
@@ -64,10 +64,10 @@
     <ClCompile Include="pit.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\Include\Hal.h" />
     <ClInclude Include="cpu.h" />
     <ClInclude Include="gdt.h" />
     <ClInclude Include="idt.h" />
+    <ClInclude Include="pagestruct.h" />
     <ClInclude Include="pic.h" />
     <ClInclude Include="pit.h" />
     <ClInclude Include="regs.h" />

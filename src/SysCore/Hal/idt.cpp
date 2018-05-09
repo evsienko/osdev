@@ -85,15 +85,18 @@ static void idt_install () {
 
 
 //! default handler to catch unhandled system interrupts.
-static void _cdecl i86_default_handler () {
+static void i86_default_handler () {
 
+	//! clear interrupts to prevent double fault
+	disable ();
+
+	//! print debug message and halt
 #ifdef _DEBUG
 	DebugClrScr (0x18);
 	DebugGotoXY (0,0);
 	DebugSetColor (0x1e);
-	DebugPuts ("*** [i86 Hal] i86_default_handler: Unhandled Exception");
+	DebugPrintf ("*** [i86 Hal] i86_default_handler: Unhandled Exception");
 #endif
-
 
 	for(;;);
 }

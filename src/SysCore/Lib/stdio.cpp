@@ -1,21 +1,16 @@
-/******************************************************************************
-   stdio.cpp
-		-CRT stdio standard routines
 
-   modified\ Aug 06 2008
-   arthor\ Mike
--------------------------------------------------------------------------------
-   Copyright © 2008, BrokenThorn Entertainment Co.  Copyright of, or the use of
-   this, or any part, of this software without the consent of BrokenThorn Entertainment,
-   Co. is strickly prohibated. All other rights reserved.
-******************************************************************************/
+/*
+==================================================
+	stdio.cpp
+
+	i/o routines
+==================================================.
+*/
 
 #include <string.h>
 #include <stdio.h>
 
-//! this is inside DebugDisplay--need to find out where it is supposed to actually go
 extern void itoa_s(int i,unsigned base,char* buf);
-
 
 //! writes formatted string to buffer
 int vsprintf(char *str, const char *format, va_list ap) {

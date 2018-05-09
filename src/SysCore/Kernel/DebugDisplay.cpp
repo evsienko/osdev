@@ -55,6 +55,24 @@ uint8_t	_color=0;
 #pragma warning (disable:4244)
 #endif
 
+//! Updates hardware cursor
+void DebugUpdateCur (int x, int y) {
+
+    // get location
+    uint16_t cursorLocation = y * 80 + x;
+
+#if 0
+	// send location to vga controller to set cursor
+	disable();
+    outportb(0x3D4, 14);
+    outportb(0x3D5, cursorLocation >> 8); // Send the high byte.
+    outportb(0x3D4, 15);
+    outportb(0x3D5, cursorLocation);      // Send the low byte.
+	enable();
+#endif
+
+}
+
 //! Displays a character
 void DebugPutc (unsigned char c) {
 
@@ -93,6 +111,9 @@ void DebugPutc (unsigned char c) {
         cursor_x = 0;
         cursor_y++;
     }
+
+    //! update hardware cursor
+	DebugUpdateCur (cursor_x,cursor_y);
 }
 
 
@@ -131,6 +152,35 @@ void itoa_s(int i,unsigned base,char* buf) {
    itoa(i,base,buf);
 }
 
+#if 0
+void Print_Float( float value )
+{
+    // print the integral part
+    print( (int)value );
+   
+    // now get rid of the integral part
+    value -= ((int)value);
+   
+    // print the decimal point
+    printchar( '.' );
+   
+    // now the decimal part, make sure everything is to the left
+    // of the decimal point.
+    // NOTE: You may want to make a cut off after so many tries since this
+    // would lock up on numbers like 1/3
+    while( value != (int)value )
+    {
+        value *= 10;
+       
+    } // end while
+   
+    // now print it
+    print( (int)value );
+   
+} // end Print_Float
+
+#endif
+
 //============================================================================
 //    INTERFACE FUNCTIONS
 //============================================================================
@@ -151,6 +201,9 @@ void DebugGotoXY (unsigned x, unsigned y) {
 
 	if (cursor_y <= 25)
 	    cursor_y = y;
+
+	//! update hardware cursor to new position
+	DebugUpdateCur (cursor_x, cursor_y);
 }
 
 //! Clear screen

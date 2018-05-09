@@ -1,40 +1,49 @@
 //****************************************************************************
 //**
 //**    panic.cpp
+//**		-Prints out an error and halts the system
 //**
 //****************************************************************************
 
 #include <hal.h>
-#include <stdarg.h>
+#include <stdio.h>
 #include "DebugDisplay.h"
 
-//! something is wrong--bail out
+//! looks cool ^^
+static char* sickpc = " \
+                               _______      \n\
+                               |.-----.|    \n\
+                               ||x . x||    \n\
+                               ||_.-._||    \n\
+                               `--)-(--`    \n\
+                              __[=== o]___  \n\
+                             |:::::::::::|\\ \n\
+                             `-=========-`()\n\
+                                M. O. S.\n\n";
+
+static char* disc = "An internal error was detected. The system has been halted.\n\
+Please restart your computer.\n\n";
+
 void _cdecl kernel_panic (const char* fmt, ...) {
 
 	disable ();
 
+	DebugClrScr (0x13);
+	DebugGotoXY (0,0);
+	DebugSetColor (0x17);
+
+	DebugPuts (sickpc);
+	DebugPuts (disc);
+
 	va_list		args;
-	static char buf[1024];
+
+	char buf[1024];
 
 	va_start (args, fmt);
-
-// We will need a vsprintf() here. I will see if I can write
-// one before the tutorial release
-
+	vsprintf (buf, fmt, args);
 	va_end (args);
 
-	char* disclamer="We apologize, MOS has encountered a problem and has been shut down\n\
-to prevent damage to your computer. Any unsaved work might be lost.\n\
-We are sorry for the inconvenience this might have caused.\n\n\
-Please report the following information and restart your computer.\n\
-The system has been halted.\n\n";
-
-	DebugClrScr (0x1f);
-	DebugGotoXY (0,0);
-	DebugSetColor (0x1f);
-	DebugPuts (disclamer);
-
-	DebugPrintf ("*** STOP: %s", fmt);
+	DebugPrintf ("*** STOP: %s \n\n", buf);
 
 	for (;;);
 }

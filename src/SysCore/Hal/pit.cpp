@@ -96,7 +96,7 @@ uint32_t i86_pit_get_tick_count () {
 }
 
 
-//! send command to pic
+//! send command to pit
 void i86_pit_send_command (uint8_t cmd) {
 
 	outportb (I86_PIT_REG_COMMAND, cmd);

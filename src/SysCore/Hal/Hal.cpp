@@ -20,9 +20,9 @@
 
 #include <Hal.h>
 #include "cpu.h"
-#include "idt.h"
 #include "pic.h"
 #include "pit.h"
+#include "idt.h"
 
 //============================================================================
 //    IMPLEMENTATION PRIVATE DEFINITIONS / ENUMERATIONS / SIMPLE TYPEDEFS
@@ -55,6 +55,9 @@
 //! initialize hardware devices
 int _cdecl hal_initialize () {
 
+	//! disable hardware interrupts
+	disable ();
+
 	//! initialize motherboard controllers and system timer
 	i86_cpu_initialize ();
 	i86_pic_initialize (0x20,0x28);
@@ -70,11 +73,13 @@ int _cdecl hal_initialize () {
 //! shutdown hardware devices
 int _cdecl hal_shutdown () {
 
+	//! shutdown system resources
 	i86_cpu_shutdown ();
 	return 0;
 }
 
-//! generate interrupt call
+
+//! generate i86 interrupt request
 void _cdecl geninterrupt (int n) {
 #ifdef _MSC_VER
 	_asm {

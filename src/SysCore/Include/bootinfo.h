@@ -1,23 +1,10 @@
-#ifndef _HAL_H
-#define _HAL_H
+#ifndef _BOOTINFO_H
+#define _BOOTINFO_H
 //****************************************************************************
 //**
-//**    Hal.h
-//**		Hardware Abstraction Layer Interface
-//**
-//**	The Hardware Abstraction Layer (HAL) provides an abstract interface
-//**	to control the basic motherboard hardware devices. This is accomplished
-//**	by abstracting hardware dependencies behind this interface.
-//**
-//**	All routines and types are declared extern and must be defined within
-//**	external libraries to define specific hal implimentations.
+//**    bootinfo.h
 //**
 //****************************************************************************
-
-#ifndef ARCH_X86
-#pragma error "HAL not implimented for this platform"
-#endif
-
 //============================================================================
 //    INTERFACE REQUIRED HEADERS
 //============================================================================
@@ -27,68 +14,47 @@
 //============================================================================
 //    INTERFACE DEFINITIONS / ENUMERATIONS / SIMPLE TYPEDEFS
 //============================================================================
-
-#ifdef _MSC_VER
-#define interrupt __declspec (naked)
-#else
-#define interrupt
-#endif
-
-#define far
-#define near
-
 //============================================================================
 //    INTERFACE CLASS PROTOTYPES / EXTERNAL CLASS REFERENCES
 //============================================================================
 //============================================================================
 //    INTERFACE STRUCTURES / UTILITY CLASSES
 //============================================================================
+
+//! multiboot info structure passed from boot loader
+
+struct multiboot_info {
+
+	uint32_t	m_flags;
+	uint32_t	m_memoryLo;
+	uint32_t	m_memoryHi;
+	uint32_t	m_bootDevice;
+	uint32_t	m_cmdLine;
+	uint32_t	m_modsCount;
+	uint32_t	m_modsAddr;
+	uint32_t	m_syms0;
+	uint32_t	m_syms1;
+	uint32_t	m_syms2;
+	uint32_t	m_mmap_length;
+	uint32_t	m_mmap_addr;
+	uint32_t	m_drives_length;
+	uint32_t	m_drives_addr;
+	uint32_t	m_config_table;
+	uint32_t	m_bootloader_name;
+	uint32_t	m_apm_table;
+	uint32_t	m_vbe_control_info;
+	uint32_t	m_vbe_mode_info;
+	uint16_t	m_vbe_mode;
+	uint32_t	m_vbe_interface_addr;
+	uint16_t	m_vbe_interface_len;
+};
+
 //============================================================================
 //    INTERFACE DATA DECLARATIONS
 //============================================================================
 //============================================================================
 //    INTERFACE FUNCTION PROTOTYPES
 //============================================================================
-
-//! initialize hardware abstraction layer
-extern	int				_cdecl	hal_initialize ();
-
-//! shutdown hardware abstraction layer
-extern	int				_cdecl	hal_shutdown ();
-
-//! enables hardware device interrupts
-extern	void			_cdecl	enable ();
-
-//! disables hardware device interrupts
-extern	void			_cdecl	disable ();
-
-//! generates interrupt
-extern	void			_cdecl	geninterrupt (int n);
-
-//! reads from hardware device port
-extern	unsigned char	_cdecl	inportb (unsigned short id);
-
-//! writes byte to hardware port
-extern	void			_cdecl	outportb (unsigned short id, unsigned char value);
-
-//! sets new interrupt vector
-extern	void			_cdecl	setvect (int intno, void (_cdecl far &vect) ( ) );
-
-//! returns current interrupt at interrupt vector
-extern	void (_cdecl	far * _cdecl getvect (int intno)) ( );
-
-//! notifies hal the interrupt is done
-extern	void			_cdecl	interruptdone (unsigned int intno);
-
-//! generates sound
-extern	void			_cdecl	sound (unsigned frequency);
-
-//! returns cpu vender
-extern const char*		_cdecl	get_cpu_vender ();
-
-//! returns current tick count (Only for demo)
-extern	int				_cdecl	get_tick_count ();
-
 //============================================================================
 //    INTERFACE OBJECT CLASS DEFINITIONS
 //============================================================================
@@ -97,7 +63,9 @@ extern	int				_cdecl	get_tick_count ();
 //============================================================================
 //****************************************************************************
 //**
-//**    END [Hal.h]
+//**    END [bootinfo.h]
 //**
 //****************************************************************************
+
 #endif
+

@@ -38,7 +38,7 @@
 				Name="VCCLCompilerTool"
 				OmitFramePointers="true"
 				AdditionalIncludeDirectories="..\Include\"
-				PreprocessorDefinitions="ARCH_X86;_DEBUG"
+				PreprocessorDefinitions="ARCH_X86"
 				IgnoreStandardIncludePath="true"
 				ExceptionHandling="0"
 				StructMemberAlignment="1"
@@ -159,15 +159,15 @@
 			>
 		</File>
 		<File
-			RelativePath="..\Include\Hal.h"
-			>
-		</File>
-		<File
 			RelativePath=".\idt.cpp"
 			>
 		</File>
 		<File
 			RelativePath=".\idt.h"
+			>
+		</File>
+		<File
+			RelativePath=".\pagestruct.h"
 			>
 		</File>
 		<File

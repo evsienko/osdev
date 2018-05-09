@@ -1,13 +1,18 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27428.2027
-MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Lib", "Lib\Lib.vcxproj", "{520F8072-F995-4C60-9F50-BD300F913D7F}"
+Microsoft Visual Studio Solution File, Format Version 9.00
+# Visual C++ Express 2005
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Lib", "Lib\Lib.vcproj", "{520F8072-F995-4C60-9F50-BD300F913D7F}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Kernel", "Kernel\Kernel.vcxproj", "{3EEB4C94-0534-40F5-BBF1-01C0C0AC5658}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Kernel", "Kernel\Kernel.vcproj", "{3EEB4C94-0534-40F5-BBF1-01C0C0AC5658}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F9978721-33F3-494B-9AF6-7B88F8606D23} = {F9978721-33F3-494B-9AF6-7B88F8606D23}
+		{520F8072-F995-4C60-9F50-BD300F913D7F} = {520F8072-F995-4C60-9F50-BD300F913D7F}
+	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Hal", "Hal\Hal.vcxproj", "{F9978721-33F3-494B-9AF6-7B88F8606D23}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Hal", "Hal\Hal.vcproj", "{F9978721-33F3-494B-9AF6-7B88F8606D23}"
+	ProjectSection(ProjectDependencies) = postProject
+		{520F8072-F995-4C60-9F50-BD300F913D7F} = {520F8072-F995-4C60-9F50-BD300F913D7F}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -30,8 +35,5 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {39B4FFFA-FE10-4AE9-9D66-1B8E7A8B9E16}
 	EndGlobalSection
 EndGlobal

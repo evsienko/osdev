@@ -64,7 +64,6 @@ void i86_cpu_shutdown () {
 
 }
 
-
 //! returns vender name of cpu
 char* i86_cpu_get_vender () {
 
@@ -81,6 +80,42 @@ char* i86_cpu_get_vender () {
 #endif
 
 	return vender;
+}
+
+//! flush all internal and external processor caches
+void i86_cpu_flush_caches () {
+
+#ifdef _MSC_VER
+	_asm {
+		cli
+		invd
+		sti
+	}
+#endif
+}
+
+//! same as above but writes the data back into memory first
+void i86_cpu_flush_caches_write () {
+
+#ifdef _MSC_VER
+	_asm {
+		cli
+		wbinvd
+		sti
+	}
+#endif
+}
+
+//! flushes TLB entry
+void i86_cpu_flush_tlb_entry (uint32_t addr) {
+
+#ifdef _MSC_VER
+	_asm {
+		cli
+		invlpg	addr
+		sti
+	}
+#endif
 }
 
 

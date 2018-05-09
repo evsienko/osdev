@@ -22,6 +22,8 @@ jmp	main				; go to start
 %include "A20.inc"			; A20 enabling
 %include "Fat12.inc"			; FAT12 driver. Kinda :)
 %include "Common.inc"
+%include "bootinfo.inc"
+%include "memory.inc"
 
 ;*******************************************************
 ;	Data Section
@@ -29,6 +31,32 @@ jmp	main				; go to start
 
 LoadingMsg db 0x0D, 0x0A, "Searching for Operating System...", 0x00
 msgFailure db 0x0D, 0x0A, "*** FATAL: Missing or corrupt KRNL32.EXE. Press Any Key to Reboot.", 0x0D, 0x0A, 0x0A, 0x00
+
+boot_info:
+istruc multiboot_info
+	at multiboot_info.flags,			dd 0
+	at multiboot_info.memoryLo,			dd 0
+	at multiboot_info.memoryHi,			dd 0
+	at multiboot_info.bootDevice,		dd 0
+	at multiboot_info.cmdLine,			dd 0
+	at multiboot_info.mods_count,		dd 0
+	at multiboot_info.mods_addr,		dd 0
+	at multiboot_info.syms0,			dd 0
+	at multiboot_info.syms1,			dd 0
+	at multiboot_info.syms2,			dd 0
+	at multiboot_info.mmap_length,		dd 0
+	at multiboot_info.mmap_addr,		dd 0
+	at multiboot_info.drives_length,	dd 0
+	at multiboot_info.drives_addr,		dd 0
+	at multiboot_info.config_table,		dd 0
+	at multiboot_info.bootloader_name,	dd 0
+	at multiboot_info.apm_table,		dd 0
+	at multiboot_info.vbe_control_info,	dd 0
+	at multiboot_info.vbe_mode_info,	dw 0
+	at multiboot_info.vbe_interface_seg,dw 0
+	at multiboot_info.vbe_interface_off,dw 0
+	at multiboot_info.vbe_interface_len,dw 0
+iend
 
 main:
 
@@ -45,9 +73,23 @@ main:
 	mov		sp, 0xFFFF
 	sti	                   ; enable interrupts
 
+	mov     [boot_info+multiboot_info.bootDevice], dl
+
 	call	_EnableA20
 	call	InstallGDT
 	sti
+
+	xor		eax, eax
+	xor		ebx, ebx
+	call	BiosGetMemorySize64MB
+
+	mov		word [boot_info+multiboot_info.memoryHi], bx
+	mov		word [boot_info+multiboot_info.memoryLo], ax
+
+	mov		eax, 0x0
+	mov		ds, ax
+	mov		di, 0x1000
+	call	BiosGetMemoryMap
 
 	call	LoadRoot
    	mov    	ebx, 0
@@ -122,6 +164,8 @@ TestImage:
   	  je     EXECUTE
   	  mov	ebx, BadImage
   	  call	Puts32
+  
+	jmp	EXECUTE
   	  cli
   	  hlt
 
@@ -144,7 +188,16 @@ EXECUTE:
 	add		ebp, eax
 	cli
 
+	mov		eax, 0x2badb002			; multiboot specs say eax should be this
+	mov		ebx, 0
+	mov		edx, [ImageSize]
+	
+;edx=8
+
+	push	dword boot_info
+
 	call	ebp               	      ; Execute Kernel
+	add		esp, 4
 
     cli
 	hlt

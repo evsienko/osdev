@@ -74,6 +74,8 @@ struct idt_descriptor {
 #pragma pack (pop)
 #endif
 
+typedef idt_descriptor idt_desc;
+
 //============================================================================
 //    INTERFACE DATA DECLARATIONS
 //============================================================================

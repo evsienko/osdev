@@ -1,23 +1,12 @@
-#ifndef _HAL_H
-#define _HAL_H
+
+#ifndef _MMNGR_PHYS_H
+#define _MMNGR_PHYS_H
 //****************************************************************************
 //**
-//**    Hal.h
-//**		Hardware Abstraction Layer Interface
-//**
-//**	The Hardware Abstraction Layer (HAL) provides an abstract interface
-//**	to control the basic motherboard hardware devices. This is accomplished
-//**	by abstracting hardware dependencies behind this interface.
-//**
-//**	All routines and types are declared extern and must be defined within
-//**	external libraries to define specific hal implimentations.
+//**    mmngr_phys.cpp
+//**		-Physical Memory Manager
 //**
 //****************************************************************************
-
-#ifndef ARCH_X86
-#pragma error "HAL not implimented for this platform"
-#endif
-
 //============================================================================
 //    INTERFACE REQUIRED HEADERS
 //============================================================================
@@ -28,14 +17,8 @@
 //    INTERFACE DEFINITIONS / ENUMERATIONS / SIMPLE TYPEDEFS
 //============================================================================
 
-#ifdef _MSC_VER
-#define interrupt __declspec (naked)
-#else
-#define interrupt
-#endif
-
-#define far
-#define near
+//! physical address
+typedef	uint32_t physical_addr;
 
 //============================================================================
 //    INTERFACE CLASS PROTOTYPES / EXTERNAL CLASS REFERENCES
@@ -50,44 +33,53 @@
 //    INTERFACE FUNCTION PROTOTYPES
 //============================================================================
 
-//! initialize hardware abstraction layer
-extern	int				_cdecl	hal_initialize ();
+//! initialize the physical memory manager
+extern	void	pmmngr_init (size_t, physical_addr);
 
-//! shutdown hardware abstraction layer
-extern	int				_cdecl	hal_shutdown ();
+//! enables a physical memory region for use
+extern	void	pmmngr_init_region (physical_addr, size_t);
 
-//! enables hardware device interrupts
-extern	void			_cdecl	enable ();
+//! disables a physical memory region as in use (unuseable)
+extern	void	pmmngr_deinit_region (physical_addr base, size_t);
 
-//! disables hardware device interrupts
-extern	void			_cdecl	disable ();
+//! allocates a single memory block
+extern	void*	pmmngr_alloc_block ();
 
-//! generates interrupt
-extern	void			_cdecl	geninterrupt (int n);
+//! releases a memory block
+extern	void	pmmngr_free_block (void*);
 
-//! reads from hardware device port
-extern	unsigned char	_cdecl	inportb (unsigned short id);
+//! allocates blocks of memory
+extern	void*	pmmngr_alloc_blocks (size_t);
 
-//! writes byte to hardware port
-extern	void			_cdecl	outportb (unsigned short id, unsigned char value);
+//! frees blocks of memory
+extern	void	pmmngr_free_blocks (void*, size_t);
 
-//! sets new interrupt vector
-extern	void			_cdecl	setvect (int intno, void (_cdecl far &vect) ( ) );
+//! returns amount of physical memory the manager is set to use
+extern	size_t pmmngr_get_memory_size ();
 
-//! returns current interrupt at interrupt vector
-extern	void (_cdecl	far * _cdecl getvect (int intno)) ( );
+//! returns number of blocks currently in use
+extern	uint32_t pmmngr_get_use_block_count ();
 
-//! notifies hal the interrupt is done
-extern	void			_cdecl	interruptdone (unsigned int intno);
+//! returns number of blocks not in use
+extern	uint32_t pmmngr_get_free_block_count ();
 
-//! generates sound
-extern	void			_cdecl	sound (unsigned frequency);
+//! returns number of memory blocks
+extern	uint32_t pmmngr_get_block_count ();
 
-//! returns cpu vender
-extern const char*		_cdecl	get_cpu_vender ();
+//! returns default memory block size in bytes
+extern uint32_t pmmngr_get_block_size ();
 
-//! returns current tick count (Only for demo)
-extern	int				_cdecl	get_tick_count ();
+//! enable or disable paging
+extern	void	pmmngr_paging_enable (bool);
+
+//! test if paging is enabled
+extern	bool	pmmngr_is_paging ();
+
+//! loads the page directory base register (PDBR)
+extern	void	pmmngr_load_PDBR (physical_addr);
+
+//! get PDBR physical address
+extern	physical_addr pmmngr_get_PDBR ();
 
 //============================================================================
 //    INTERFACE OBJECT CLASS DEFINITIONS
@@ -97,7 +89,8 @@ extern	int				_cdecl	get_tick_count ();
 //============================================================================
 //****************************************************************************
 //**
-//**    END [Hal.h]
+//**    END [mmngr_phys.h]
 //**
 //****************************************************************************
+
 #endif

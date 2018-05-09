@@ -1,17 +1,21 @@
-/*
-=========================================================================
+/******************************************************************************
+
 	entry.cpp
+		-Kernel entry point called from boot loader
 
-	kernel entry point called from bootloader
-=========================================================================
-*/
+******************************************************************************/
 
+#include <bootinfo.h>
+
+//! basic crt initilization stuff
 extern void __cdecl  InitializeConstructors ();
 extern void __cdecl  Exit ();
-extern int	__cdecl  main ();
+
+//! main
+extern int _cdecl kmain (multiboot_info* bootinfo);
 
 //! kernel entry point is called by boot loader
-void __cdecl  kernel_entry () {
+void __cdecl  kernel_entry (multiboot_info* bootinfo) {
 
 #ifdef ARCH_X86
 
@@ -27,7 +31,7 @@ void __cdecl  kernel_entry () {
 #endif //ARCH_X86
 
 	InitializeConstructors();
-	main ();
+	kmain (bootinfo);
 	Exit ();
 
 #ifdef ARCH_X86

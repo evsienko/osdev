@@ -47,8 +47,17 @@ extern int i86_cpu_initialize ();
 //! shutdown the processors
 extern void i86_cpu_shutdown ();
 
-//! get cpu vender
+//! get processor vender
 extern char* i86_cpu_get_vender ();
+
+//! flush all internal and external processor caches
+extern void i86_cpu_flush_caches ();
+
+//! same as above but writes the data back into memory first
+extern void i86_cpu_flush_caches_write ();
+
+//! flushes translation lookaside buffer (TLB) entry
+extern void i86_cpu_flush_tlb_entry (uint32_t);
 
 //============================================================================
 //    INTERFACE OBJECT CLASS DEFINITIONS
