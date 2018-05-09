@@ -278,7 +278,7 @@ int DebugPrintf (const char* str, ...) {
 					case 'X':
 					case 'x': {
 						int c = va_arg (args, int);
-						char str[32]={0};
+						char str[32];
 						itoa_s (c,16,str);
 						DebugPuts (str);
 						i++;		// go to next character
