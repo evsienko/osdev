@@ -67,7 +67,6 @@
     <ClInclude Include="cpu.h" />
     <ClInclude Include="gdt.h" />
     <ClInclude Include="idt.h" />
-    <ClInclude Include="pagestruct.h" />
     <ClInclude Include="pic.h" />
     <ClInclude Include="pit.h" />
     <ClInclude Include="regs.h" />

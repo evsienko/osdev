@@ -16,12 +16,12 @@ FILETYPE 0x1
 			VALUE "FileDescription", "MOS 32 bit kernel"
 			VALUE "FileVersion", "0, 0, 0, 1"
 			VALUE "InternalName", "MOS"
-			VALUE "LegalCopyright", " "
+			VALUE "LegalCopyright", "Copyright © 2008 BrokenThorn Entertainment"
 			VALUE "LegalTrademarks", " "
 			VALUE "OriginalFilename", "KRNL32.EXE"
 			VALUE "ProductName", "MOS"
 			VALUE "ProductVersion", "0, 0, 0, 1"
-			VALUE "Comments", "MOS 32 bit kernel image"
+			VALUE "Comments", "MOS 32 bit kernel image. Visit us at http://www.brokenthorn.com"
 		}
 	}
 

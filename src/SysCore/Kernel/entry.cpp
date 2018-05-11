@@ -1,11 +1,13 @@
 /******************************************************************************
+   entry.cpp
+		-Kernel entry point
 
-	entry.cpp
-		-Kernel entry point called from boot loader
-
+   modified\ Aug 06 2008
+   arthor\ Mike
 ******************************************************************************/
 
 #include <bootinfo.h>
+#include "DebugDisplay.h"
 
 //! basic crt initilization stuff
 extern void __cdecl  InitializeConstructors ();
@@ -33,6 +35,8 @@ void __cdecl  kernel_entry (multiboot_info* bootinfo) {
 	InitializeConstructors();
 	kmain (bootinfo);
 	Exit ();
+
+	DebugPrintf ("\nkernel_entry: shutdown complete. Halting system");
 
 #ifdef ARCH_X86
 	_asm {

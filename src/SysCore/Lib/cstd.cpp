@@ -12,8 +12,6 @@
 #error "MOS2 Kernel C++ Runtime requires Microsoft Visual C++ 2005 or later."
 #endif
 
-#include <stdint.h>
-
 /*
 ===========================
 	Dynamic initializer sections
@@ -187,43 +185,12 @@ long __declspec (naked) _ftol2_sse() {
 	}
 }
 
-//! MSVC++ 2008 needs this to right shift uint64_t numbers
-//! eax=> number to shift cl=> number of bits to shift by
-//! ret\ eax=> new number
-uint64_t _declspec (naked) _aullshr () {
-
-	_asm {
-        //! only handle 64bit shifts or more
-        cmp     cl,64
-        jae     invalid
-
-		//! handle shifts between 0 and 31 bits
-        cmp     cl, 32
-        jae     more32
-        shrd    eax,edx,cl
-        shr     edx,cl
-        ret
-
-		//! handle shifts of 32-63 bits
-	more32:
-        mov     eax,edx
-        xor     edx,edx
-        and     cl,31
-        shr     eax,cl
-        ret
-
-	//! invalid number (its less then 32bits), return 0
-	invalid:
-        xor     eax,eax
-        xor     edx,edx
-        ret
-	}
-}
-
 //! required by MSVC++ runtime for floating point operations (Must be 1)
 int _fltused = 1;
 
+
 };
+
 
 /*
 ===================================

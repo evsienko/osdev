@@ -10,7 +10,6 @@
 
 #include <string.h>
 #include "mmngr_phys.h"
-#include "DebugDisplay.h"
 
 //============================================================================
 //    IMPLEMENTATION PRIVATE DEFINITIONS / ENUMERATIONS / SIMPLE TYPEDEFS
@@ -98,7 +97,7 @@ inline bool mmap_test (int bit) {
 int mmap_first_free () {
 
 	//! find the first free bit
-	for (uint32_t i=0; i< pmmngr_get_block_count() /32; i++)
+	for (uint32_t i=0; i< pmmngr_get_block_count(); i++)
 		if (_mmngr_memory_map[i] != 0xffffffff)
 			for (int j=0; j<32; j++) {				//! test each bit in the dword
 
@@ -119,7 +118,7 @@ int mmap_first_free_s (size_t size) {
 	if (size==1)
 		return mmap_first_free ();
 
-	for (uint32_t i=0; i<pmmngr_get_block_count() /32; i++)
+	for (uint32_t i=0; i<pmmngr_get_block_count(); i++)
 		if (_mmngr_memory_map[i] != 0xffffffff)
 			for (int j=0; j<32; j++) {	//! test each bit in the dword
 
@@ -153,10 +152,11 @@ void	pmmngr_init (size_t memSize, physical_addr bitmap) {
 	_mmngr_memory_size	=	memSize;
 	_mmngr_memory_map	=	(uint32_t*) bitmap;
 	_mmngr_max_blocks	=	(pmmngr_get_memory_size()*1024) / PMMNGR_BLOCK_SIZE;
-	_mmngr_used_blocks	=	_mmngr_max_blocks;
+	_mmngr_used_blocks	=	pmmngr_get_block_count();
 
 	//! By default, all of memory is in use
 	memset (_mmngr_memory_map, 0xf, pmmngr_get_block_count() / PMMNGR_BLOCKS_PER_BYTE );
+
 }
 
 void	pmmngr_init_region (physical_addr base, size_t size) {
@@ -164,11 +164,9 @@ void	pmmngr_init_region (physical_addr base, size_t size) {
 	int align = base / PMMNGR_BLOCK_SIZE;
 	int blocks = size / PMMNGR_BLOCK_SIZE;
 
-	for (; blocks>=0; blocks--) {
+	for (; blocks>0; blocks--) {
 		mmap_unset (align++);
 		_mmngr_used_blocks--;
-
-
 	}
 
 	mmap_set (0);	//first block is always set. This insures allocs cant be 0
@@ -179,11 +177,12 @@ void	pmmngr_deinit_region (physical_addr base, size_t size) {
 	int align = base / PMMNGR_BLOCK_SIZE;
 	int blocks = size / PMMNGR_BLOCK_SIZE;
 
-	for (; blocks>=0; blocks--) {
+	for (; blocks>0; blocks--) {
 		mmap_set (align++);
 		_mmngr_used_blocks++;
 	}
 
+	mmap_set (0);	//first block is always set. This insures allocs cant be 0
 }
 
 void*	pmmngr_alloc_block () {

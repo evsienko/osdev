@@ -1,44 +1,41 @@
-#ifndef _IDT_H
-#define _IDT_H
+#ifndef _MMNGR_VIRT_PTE_H
+#define _MMNGR_VIRT_PTE_H
 //****************************************************************************
 //**
-//**    Idt.h
-//**		Interrupt Descriptor Table. The IDT is responsible for providing
-//**	the interface for managing interrupts, installing, setting, requesting,
-//**	generating, and interrupt callback managing.
+//**    vmmngr_pte.h
+//**		-Page Table Entries (PTE). This provides an abstract interface
+//**	to aid in management of PTEs.
 //**
 //****************************************************************************
-
-#ifndef ARCH_X86
-#error "[idt.h for i86] requires i86 architecture. Define ARCH_X86"
-#endif
-
-// We can test new architecture here as needed
-
-#include <stdint.h>
-
 //============================================================================
 //    INTERFACE REQUIRED HEADERS
 //============================================================================
+
+#include <stdint.h>
+#include "mmngr_phys.h"	//physical_addr
+
 //============================================================================
 //    INTERFACE DEFINITIONS / ENUMERATIONS / SIMPLE TYPEDEFS
 //============================================================================
 
-//! i86 defines 256 possible interrupt handlers (0-255)
-#define I86_MAX_INTERRUPTS		256
+//! i86 architecture defines this format so be careful if you modify it
+enum PAGE_PTE_FLAGS {
 
-//! must be in the format 0D110, where D is descriptor type
-#define I86_IDT_DESC_BIT16		0x06	//00000110
-#define I86_IDT_DESC_BIT32		0x0E	//00001110
-#define I86_IDT_DESC_RING1		0x40	//01000000
-#define I86_IDT_DESC_RING2		0x20	//00100000
-#define I86_IDT_DESC_RING3		0x60	//01100000
-#define I86_IDT_DESC_PRESENT		0x80	//10000000
+	I86_PTE_PRESENT			=	1,			//0000000000000000000000000000001
+	I86_PTE_WRITABLE		=	2,			//0000000000000000000000000000010
+	I86_PTE_USER			=	4,			//0000000000000000000000000000100
+	I86_PTE_WRITETHOUGH		=	8,			//0000000000000000000000000001000
+	I86_PTE_NOT_CACHEABLE	=	0x10,		//0000000000000000000000000010000
+	I86_PTE_ACCESSED		=	0x20,		//0000000000000000000000000100000
+	I86_PTE_DIRTY			=	0x40,		//0000000000000000000000001000000
+	I86_PTE_PAT				=	0x80,		//0000000000000000000000010000000
+	I86_PTE_CPU_GLOBAL		=	0x100,		//0000000000000000000000100000000
+	I86_PTE_LV4_GLOBAL		=	0x200,		//0000000000000000000001000000000
+   	I86_PTE_FRAME			=	0x7FFFF000 	//1111111111111111111000000000000
+};
 
-//! interrupt handler w/o error code
-//! Note: interrupt handlers are called by the processor. The stack setup may change
-//! so we leave it up to the interrupts' implimentation to handle it and properly return
-typedef void (_cdecl *I86_IRQ_HANDLER)(void);
+//! page table entry
+typedef uint32_t pt_entry;
 
 //============================================================================
 //    INTERFACE CLASS PROTOTYPES / EXTERNAL CLASS REFERENCES
@@ -46,34 +43,6 @@ typedef void (_cdecl *I86_IRQ_HANDLER)(void);
 //============================================================================
 //    INTERFACE STRUCTURES / UTILITY CLASSES
 //============================================================================
-
-#ifdef _MSC_VER
-#pragma pack (push, 1)
-#endif
-
-//! interrupt descriptor
-struct idt_descriptor {
-
-	//! bits 0-16 of interrupt routine (ir) address
-	uint16_t		baseLo;
-
-	//! code selector in gdt
-	uint16_t		sel;
-
-	//! reserved, shold be 0
-	uint8_t			reserved;
-
-	//! bit flags. Set with flags above
-	uint8_t			flags;
-
-	//! bits 16-32 of ir address
-	uint16_t		baseHi;
-};
-
-#ifdef _MSC_VER
-#pragma pack (pop)
-#endif
-
 //============================================================================
 //    INTERFACE DATA DECLARATIONS
 //============================================================================
@@ -81,14 +50,23 @@ struct idt_descriptor {
 //    INTERFACE FUNCTION PROTOTYPES
 //============================================================================
 
-//! returns interrupt descriptor
-extern idt_descriptor* i86_get_ir (uint32_t i);
+//! sets a flag in the page table entry
+extern void pt_entry_add_attrib (pt_entry* e, uint32_t attrib);
 
-//! installs interrupt handler. When INT is fired, it will call this callback
-extern int i86_install_ir (uint32_t i, uint16_t flags, uint16_t sel, I86_IRQ_HANDLER);
+//! clears a flag in the page table entry
+extern void pt_entry_del_attrib (pt_entry* e, uint32_t attrib);
 
-// initialize basic idt
-extern int i86_idt_initialize (uint16_t codeSel);
+//! sets a frame to page table entry
+extern void pt_entry_set_frame (pt_entry*, physical_addr);
+
+//! test if page is present
+extern bool pt_entry_is_present (pt_entry e);
+
+//! test if page is writable
+extern bool pt_entry_is_writable (pt_entry e);
+
+//! get page table entry frame address
+extern physical_addr pt_entry_pfn (pt_entry e);
 
 //============================================================================
 //    INTERFACE OBJECT CLASS DEFINITIONS
@@ -98,7 +76,8 @@ extern int i86_idt_initialize (uint16_t codeSel);
 //============================================================================
 //****************************************************************************
 //**
-//**    END [idt.h]
+//**    END [vmmngr_pte.h]
 //**
 //****************************************************************************
+
 #endif

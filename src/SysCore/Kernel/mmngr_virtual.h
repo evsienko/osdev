@@ -1,44 +1,33 @@
-#ifndef _IDT_H
-#define _IDT_H
+#ifndef _MMNGR_VIRT_H
+#define _MMNGR_VIRT_H
 //****************************************************************************
 //**
-//**    Idt.h
-//**		Interrupt Descriptor Table. The IDT is responsible for providing
-//**	the interface for managing interrupts, installing, setting, requesting,
-//**	generating, and interrupt callback managing.
+//**    mmngr_virtual.h
+//**		-Virtual Memory Manager
 //**
 //****************************************************************************
-
-#ifndef ARCH_X86
-#error "[idt.h for i86] requires i86 architecture. Define ARCH_X86"
-#endif
-
-// We can test new architecture here as needed
-
-#include <stdint.h>
-
 //============================================================================
 //    INTERFACE REQUIRED HEADERS
 //============================================================================
+
+#include <stdint.h>
+#include "vmmngr_pte.h"
+#include "vmmngr_pde.h"
+
 //============================================================================
 //    INTERFACE DEFINITIONS / ENUMERATIONS / SIMPLE TYPEDEFS
 //============================================================================
 
-//! i86 defines 256 possible interrupt handlers (0-255)
-#define I86_MAX_INTERRUPTS		256
+//! virtual address
+typedef uint32_t virtual_addr;
 
-//! must be in the format 0D110, where D is descriptor type
-#define I86_IDT_DESC_BIT16		0x06	//00000110
-#define I86_IDT_DESC_BIT32		0x0E	//00001110
-#define I86_IDT_DESC_RING1		0x40	//01000000
-#define I86_IDT_DESC_RING2		0x20	//00100000
-#define I86_IDT_DESC_RING3		0x60	//01100000
-#define I86_IDT_DESC_PRESENT		0x80	//10000000
+//! i86 architecture defines 1024 entries per table--do not change
+#define PAGES_PER_TABLE 1024
+#define PAGES_PER_DIR	1024
 
-//! interrupt handler w/o error code
-//! Note: interrupt handlers are called by the processor. The stack setup may change
-//! so we leave it up to the interrupts' implimentation to handle it and properly return
-typedef void (_cdecl *I86_IRQ_HANDLER)(void);
+#define PAGE_DIRECTORY_INDEX(x) (((x) >> 22) & 0x3ff)
+#define PAGE_TABLE_INDEX(x) (((x) >> 12) & 0x3ff)
+#define PAGE_GET_PHYSICAL_ADDRESS(x) (*x & ~0xfff)
 
 //============================================================================
 //    INTERFACE CLASS PROTOTYPES / EXTERNAL CLASS REFERENCES
@@ -47,32 +36,17 @@ typedef void (_cdecl *I86_IRQ_HANDLER)(void);
 //    INTERFACE STRUCTURES / UTILITY CLASSES
 //============================================================================
 
-#ifdef _MSC_VER
-#pragma pack (push, 1)
-#endif
+//! page table
+struct ptable {
 
-//! interrupt descriptor
-struct idt_descriptor {
-
-	//! bits 0-16 of interrupt routine (ir) address
-	uint16_t		baseLo;
-
-	//! code selector in gdt
-	uint16_t		sel;
-
-	//! reserved, shold be 0
-	uint8_t			reserved;
-
-	//! bit flags. Set with flags above
-	uint8_t			flags;
-
-	//! bits 16-32 of ir address
-	uint16_t		baseHi;
+	pt_entry m_entries[PAGES_PER_TABLE];
 };
 
-#ifdef _MSC_VER
-#pragma pack (pop)
-#endif
+//! page directory
+struct pdirectory {
+
+	pd_entry m_entries[PAGES_PER_DIR];
+};
 
 //============================================================================
 //    INTERFACE DATA DECLARATIONS
@@ -81,14 +55,44 @@ struct idt_descriptor {
 //    INTERFACE FUNCTION PROTOTYPES
 //============================================================================
 
-//! returns interrupt descriptor
-extern idt_descriptor* i86_get_ir (uint32_t i);
+//! maps phys to virtual address
+extern void MmMapPage (void* phys, void* virt);
 
-//! installs interrupt handler. When INT is fired, it will call this callback
-extern int i86_install_ir (uint32_t i, uint16_t flags, uint16_t sel, I86_IRQ_HANDLER);
+//! initialize the memory manager
+extern void vmmngr_initialize ();
 
-// initialize basic idt
-extern int i86_idt_initialize (uint16_t codeSel);
+//! allocates a page in physical memory
+extern bool vmmngr_alloc_page (pt_entry*);
+
+//! frees a page in physical memory
+extern void vmmngr_free_page (pt_entry* e);
+
+//! switch to a new page directory
+extern bool vmmngr_switch_pdirectory (pdirectory*);
+
+//! get current page directory
+extern pdirectory* vmmngr_get_directory ();
+
+//! flushes a cached translation lookaside buffer (TLB) entry
+extern void vmmngr_flush_tlb_entry (virtual_addr addr);
+
+//! clears a page table
+extern void vmmngr_ptable_clear (ptable* p);
+
+//! convert virtual address to page table index
+extern uint32_t vmmngr_ptable_virt_to_index (virtual_addr addr);
+
+//! get page entry from page table
+extern pt_entry* vmmngr_ptable_lookup_entry (ptable* p,virtual_addr addr);
+
+//! convert virtual address to page directory index
+extern uint32_t vmmngr_pdirectory_virt_to_index (virtual_addr addr);
+
+//! clears a page directory table
+extern void vmmngr_pdirectory_clear (pdirectory* dir);
+
+//! get directory entry from directory table
+extern pd_entry* vmmngr_pdirectory_lookup_entry (pdirectory* p, virtual_addr addr);
 
 //============================================================================
 //    INTERFACE OBJECT CLASS DEFINITIONS
@@ -98,7 +102,8 @@ extern int i86_idt_initialize (uint16_t codeSel);
 //============================================================================
 //****************************************************************************
 //**
-//**    END [idt.h]
+//**    END [mmngr_virtual.h]
 //**
 //****************************************************************************
+
 #endif
