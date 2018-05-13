@@ -149,7 +149,7 @@ Stage3:
 	mov	ds, ax
 	mov	ss, ax
 	mov	es, ax
-	mov	esp, 90000h		; stack begins from 90000h
+	mov	esp, 9000h		; stack begins from 9000h
 
 	call	ClrScr32
 

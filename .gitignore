@@ -5,3 +5,5 @@
 /src/SysCore/Kernel/Debug
 /src/SysCore/Kernel/*.user
 /src/SysCore/Hal/Debug
+/src/SysCore/Keyboard/Debug
+/src/SysCore/*.ncb

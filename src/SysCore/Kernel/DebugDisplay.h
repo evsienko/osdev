@@ -37,6 +37,9 @@ extern void DebugPuts (char* str);
 extern int DebugPrintf (const char* str, ...);
 extern unsigned DebugSetColor (const unsigned c);
 extern void DebugGotoXY (unsigned x, unsigned y);
+extern void DebugGetXY (unsigned* x, unsigned* y);
+extern int DebugGetHorz ();
+extern int DebugGetVert ();
 
 //============================================================================
 //    INTERFACE OBJECT CLASS DEFINITIONS

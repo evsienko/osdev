@@ -1,14 +1,3 @@
-/******************************************************************************
-   stdio.cpp
-		-CRT stdio standard routines
-
-   modified\ Aug 06 2008
-   arthor\ Mike
--------------------------------------------------------------------------------
-   Copyright © 2008, BrokenThorn Entertainment Co.  Copyright of, or the use of
-   this, or any part, of this software without the consent of BrokenThorn Entertainment,
-   Co. is strickly prohibated. All other rights reserved.
-******************************************************************************/
 
 #include <string.h>
 #include <stdio.h>

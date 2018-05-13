@@ -2,17 +2,14 @@
    main.cpp
 		-Kernel main program
 
-   modified\ Aug 06 2008
+   modified\ Feb 18 2009
    arthor\ Mike
 ******************************************************************************/
 
-//! NOTE: The bootloader maps the kernel to 0xC0000000 virtual address. Please
-//! see Stage2/paging.asm for information! Insure that you set the base address
-//! for the kernel project to 0xC0000000 by going to:
-//! project settings->linker->Advanced->Base Address, and set it to 0xC0000000
-
 #include <bootinfo.h>
 #include <hal.h>
+#include <kybrd.h>
+#include <string.h>
 
 #include "DebugDisplay.h"
 #include "exception.h"
@@ -29,28 +26,14 @@ struct memory_region {
 	uint32_t	acpi_3_0;
 };
 
-//! ...so we can print the different types of memory regions..
-char* strMemoryTypes[] = {
-
-	{"Available"},				//type 1
-	{"Reserved"},				//type 2
-	{"ACPI Reclaim"},	//type 3
-	{"ACPI NVS Memory"}			//type 4
-};
-
 uint32_t kernelSize=0;
 
-uint32_t size=0;
-
-int _cdecl kmain (multiboot_info* bootinfo) {
-
-	_asm	mov	word ptr [kernelSize], dx
+void init (multiboot_info* bootinfo) {
 
 	//! clear and init display
 	DebugClrScr (0x13);
 	DebugGotoXY (0,0);
 	DebugSetColor (0x17);
-	DebugPrintf ("M.O.S. Kernel is starting up...\n");
 
 	hal_initialize ();
 
@@ -75,7 +58,6 @@ int _cdecl kmain (multiboot_info* bootinfo) {
 	setvect (19,(void (__cdecl &)(void))simd_fpu_fault);
 
 	pmmngr_init (bootinfo->m_memorySize, 0xC0000000 + kernelSize*512);
-	DebugPrintf("pmm initialized with %i KB\n", bootinfo->m_memorySize);
 
 	memory_region*	region = (memory_region*)0x1000;
 
@@ -87,22 +69,179 @@ int _cdecl kmain (multiboot_info* bootinfo) {
 		if (i>0 && region[i].startLo==0)
 			break;
 
-		DebugPrintf ("region %i: start: 0x%x%x length (bytes): 0x%x%x type: %i (%s)\n", i, 
-			region[i].startHi, region[i].startLo,
-			region[i].sizeHi,region[i].sizeLo,
-			region[i].type, strMemoryTypes[region[i].type-1]);
-
 		pmmngr_init_region (region[i].startLo, region[i].sizeLo);
 	}
 	pmmngr_deinit_region (0x100000, kernelSize*512);
-	DebugPrintf ("pmm regions initialized: %i allocation blocks; block size: %i bytes",
-		pmmngr_get_block_count (), pmmngr_get_block_size () );
 
 	//! initialize our vmm
 	vmmngr_initialize ();
 
-	//! never return
-	_asm cli
-	_asm hlt
-	for(;;);
+	//! install the keyboard to IR 33
+	kkybrd_install (33);
+}
+
+int ticks;
+
+//! sleeps a little bit. This uses the HALs get_tick_count() which in turn uses the PIT
+void sleep (int ms) {
+
+	ticks = ms + get_tick_count ();
+	while (ticks > get_tick_count ())
+		;
+}
+
+//! wait for key stroke
+KEYCODE	getch () {
+
+	KEYCODE key = KEY_UNKNOWN;
+
+	//! wait for a keypress
+	while (key==KEY_UNKNOWN)
+		key = kkybrd_get_last_key ();
+
+	//! discard last keypress (we handled it) and return
+	kkybrd_discard_last_key ();
+	return key;
+}
+
+//! command prompt
+void cmd () {
+
+	DebugPrintf ("\nCommand> ");
+}
+
+//! gets next command
+void get_cmd (char* buf, int n) {
+
+	cmd ();
+
+	KEYCODE key = KEY_UNKNOWN;
+	bool	BufChar;
+
+	//! get command string
+	int i=0;
+	while ( i < n ) {
+
+		//! buffer the next char
+		BufChar = true;
+
+		//! grab next char
+		key = getch ();
+
+		//! end of command if enter is pressed
+		if (key==KEY_RETURN)
+			break;
+
+		//! backspace
+		if (key==KEY_BACKSPACE) {
+
+			//! dont buffer this char
+			BufChar = false;
+
+			if (i > 0) {
+
+				//! go back one char
+				unsigned y, x;
+				DebugGetXY (&x, &y);
+				if (x>0)
+					DebugGotoXY (--x, y);
+				else {
+					//! x is already 0, so go back one line
+					y--;
+					x = DebugGetHorz ();
+				}
+
+				//! erase the character from display
+				DebugPutc (' ');
+				DebugGotoXY (x, y);
+
+				//! go back one char in cmd buf
+				i--;
+			}
+		}
+
+		//! only add the char if it is to be buffered
+		if (BufChar) {
+
+			//! convert key to an ascii char and put it in buffer
+			char c = kkybrd_key_to_ascii (key);
+			if (c != 0) { //insure its an ascii char
+
+				DebugPutc (c);
+				buf [i++] = c;
+			}
+		}
+
+		//! wait for next key. You may need to adjust this to suite your needs
+		sleep (10);
+	}
+
+	//! null terminate the string
+	buf [i] = '\0';
+}
+
+//! our simple command parser
+bool run_cmd (char* cmd_buf) {
+
+	//! exit command
+	if (strcmp (cmd_buf, "exit") == 0) {
+		return true;
+	}
+
+	//! clear screen
+	else if (strcmp (cmd_buf, "cls") == 0) {
+		DebugClrScr (0x17);
+	}
+
+	//! help
+	else if (strcmp (cmd_buf, "help") == 0) {
+
+		DebugPuts ("\nOS Development Series Keyboard Programming Demo");
+		DebugPuts ("\nwith a basic Command Line Interface (CLI)\n\n");
+		DebugPuts ("Supported commands:\n");
+		DebugPuts (" - exit: quits and halts the system\n");
+		DebugPuts (" - cls: clears the display\n");
+		DebugPuts (" - help: displays this message\n");
+	}
+
+	//! invalid command
+	else {
+		DebugPrintf ("\nUnkown command");
+	}
+
+	return false;
+}
+
+void run () {
+
+	//! command buffer
+	char	cmd_buf [100];
+
+	while (1) {
+
+		//! get command
+		get_cmd (cmd_buf, 98);
+
+		//! run command
+		if (run_cmd (cmd_buf) == true)
+			break;
+	}
+}
+
+int _cdecl kmain (multiboot_info* bootinfo) {
+
+	_asm	mov	word ptr [kernelSize], dx
+
+	init (bootinfo);
+
+	DebugGotoXY (0,0);
+	DebugPuts ("OSDev Series Keyboard Demo");
+	DebugPuts ("\nType \"exit\" to quit, \"help\" for a list of commands\n");
+	DebugPuts ("+-------------------------------------------------------+\n");
+
+	run ();
+
+	DebugPrintf ("\nExit command recieved; demo halted");
+	for (;;);
+	return 0;
 }

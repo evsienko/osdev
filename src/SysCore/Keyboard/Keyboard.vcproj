@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="Hal"
-	ProjectGUID="{F9978721-33F3-494B-9AF6-7B88F8606D23}"
+	Name="Keyboard"
+	ProjectGUID="{8AB6CBCB-06D9-4C7A-9609-F77A5157AD07}"
 	>
 	<Platforms>
 		<Platform
@@ -36,12 +36,10 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="3"
 				OmitFramePointers="true"
 				AdditionalIncludeDirectories="..\Include\"
 				PreprocessorDefinitions="ARCH_X86"
 				IgnoreStandardIncludePath="true"
-				ExceptionHandling="0"
 				StructMemberAlignment="1"
 				BufferSecurityCheck="false"
 				RuntimeTypeInfo="false"
@@ -140,51 +138,11 @@
 	</References>
 	<Files>
 		<File
-			RelativePath=".\cpu.cpp"
+			RelativePath=".\kybrd.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\cpu.h"
-			>
-		</File>
-		<File
-			RelativePath=".\gdt.cpp"
-			>
-		</File>
-		<File
-			RelativePath=".\gdt.h"
-			>
-		</File>
-		<File
-			RelativePath=".\Hal.cpp"
-			>
-		</File>
-		<File
-			RelativePath=".\idt.cpp"
-			>
-		</File>
-		<File
-			RelativePath=".\idt.h"
-			>
-		</File>
-		<File
-			RelativePath=".\pic.cpp"
-			>
-		</File>
-		<File
-			RelativePath=".\pic.h"
-			>
-		</File>
-		<File
-			RelativePath=".\pit.cpp"
-			>
-		</File>
-		<File
-			RelativePath=".\pit.h"
-			>
-		</File>
-		<File
-			RelativePath=".\regs.h"
+			RelativePath=".\kybrd.h"
 			>
 		</File>
 	</Files>
