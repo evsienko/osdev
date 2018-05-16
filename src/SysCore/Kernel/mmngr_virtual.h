@@ -56,7 +56,7 @@ struct pdirectory {
 //============================================================================
 
 //! maps phys to virtual address
-extern void MmMapPage (void* phys, void* virt);
+extern void vmmngr_map_page (void* phys, void* virt);
 
 //! initialize the memory manager
 extern void vmmngr_initialize ();

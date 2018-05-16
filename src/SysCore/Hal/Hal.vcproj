@@ -148,6 +148,14 @@
 			>
 		</File>
 		<File
+			RelativePath=".\dma.cpp"
+			>
+		</File>
+		<File
+			RelativePath=".\dma.h"
+			>
+		</File>
+		<File
 			RelativePath=".\gdt.cpp"
 			>
 		</File>

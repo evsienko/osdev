@@ -153,7 +153,10 @@ const int FLPY_SECTORS_PER_TRACK = 18;
 
 //! dma tranfer buffer starts here and ends at 0x1000+64k
 //! You can change this as needed. It must be below 16MB and in idenitity mapped memory!
-const int DMA_BUFFER = 0x1000;
+int DMA_BUFFER = 0x1000;
+
+//! FDC uses DMA channel 2
+const int FDC_DMA_CHANNEL = 2;
 
 //============================================================================
 //    IMPLEMENTATION PRIVATE CLASS PROTOTYPES / EXTERNAL CLASS REFERENCES
@@ -190,42 +193,48 @@ static volatile uint8_t _FloppyDiskIRQ = 0;
 
 /**
 *	DMA Routines.
-**	The DMA (Direct Memory Access) controller allows the FDC to send data to the DMA,
-**	which can put the data in memory. While the FDC can be programmed to not use DMA,
-**  it is not very well supported on emulators or virtual machines. Because of this, we
-**  will be using the DMA for data transfers. The DMA is a complex controller, because of
-**  this we will cover it in the next tutorial. For now, please do not worry about the DMA
-**  routines to much :)
 */
 
-//! initialize DMA to use phys addr 84k-128k
-void flpydsk_initialize_dma () {
+bool _cdecl dma_initialize_floppy(uint8_t* buffer, unsigned length){
+   union{
+      uint8_t byte[4];//Lo[0], Mid[1], Hi[2]
+      unsigned long l;
+   }a, c;
 
-	outportb (0x0a,0x06);	//mask dma channel 2
-	outportb (0xd8,0xff);	//reset master flip-flop
-	outportb (0x04, 0);     //address=0x1000 
-	outportb (0x04, 0x10);
-	outportb (0xd8, 0xff);  //reset master flip-flop
-	outportb (0x05, 0xff);  //count to 0x23ff (number of bytes in a 3.5" floppy disk track)
-	outportb (0x05, 0x23);
-	outportb (0x80, 0);     //external page register = 0
-	outportb (0x0a, 0x02);  //unmask dma channel 2
+   a.l=(unsigned)buffer;
+   c.l=(unsigned)length-1;
+
+   //Check for buffer issues
+   if ((a.l >> 24) || (c.l >> 16) || (((a.l & 0xffff)+c.l) >> 16)){
+#ifdef _DEBUG
+      _asm{
+         mov      eax, 0x1337
+         cli
+         hlt
+      }
+#endif
+      return false;
+   }
+
+   dma_reset (1);
+   dma_mask_channel( FDC_DMA_CHANNEL );//Mask channel 2
+   dma_reset_flipflop ( 1 );//Flipflop reset on DMA 1
+
+   dma_set_address( FDC_DMA_CHANNEL, a.byte[0],a.byte[1]);//Buffer address
+   dma_reset_flipflop( 1 );//Flipflop reset on DMA 1
+
+   dma_set_count( FDC_DMA_CHANNEL, c.byte[0],c.byte[1]);//Set count
+   dma_set_read ( FDC_DMA_CHANNEL );
+
+   dma_unmask_all( 1 );//Unmask channel 2
+
+   return true;
 }
 
-//! prepare the DMA for read transfer
-void flpydsk_dma_read () {
+//! sets DMA base address
+void flpydsk_set_dma (int addr) {
 
-	outportb (0x0a, 0x06); //mask dma channel 2
-	outportb (0x0b, 0x56); //single transfer, address increment, autoinit, read, channel 2
-	outportb (0x0a, 0x02); //unmask dma channel 2
-}
-
-//! prepare the DMA for write transfer
-void flpydsk_dma_write () {
-
-	outportb (0x0a, 0x06); //mask dma channel 2
-	outportb (0x0b, 0x5a); //single transfer, address increment, autoinit, write, channel 2
-	outportb (0x0a, 0x02); //unmask dma channel 2
+	DMA_BUFFER = addr;
 }
 
 /**
@@ -325,7 +334,7 @@ void flpydsk_control_motor (bool b) {
 	if (_CurrentDrive > 3)
 		return;
 
-	uint32_t motor = 0;
+	uint8_t motor = 0;
 
 	//! select the correct mask based on current drive
 	switch (_CurrentDrive) {
@@ -346,7 +355,7 @@ void flpydsk_control_motor (bool b) {
 
 	//! turn on or off the motor of that drive
 	if (b)
-		flpydsk_write_dor (_CurrentDrive | motor | FLPYDSK_DOR_MASK_RESET | FLPYDSK_DOR_MASK_DMA);
+		flpydsk_write_dor (uint8_t(_CurrentDrive | motor | FLPYDSK_DOR_MASK_RESET | FLPYDSK_DOR_MASK_DMA));
 	else
 		flpydsk_write_dor (FLPYDSK_DOR_MASK_RESET);
 
@@ -355,20 +364,20 @@ void flpydsk_control_motor (bool b) {
 }
 
 //! configure drive
-void flpydsk_drive_data (uint32_t stepr, uint32_t loadt, uint32_t unloadt, bool dma ) {
+void flpydsk_drive_data (uint8_t stepr, uint8_t loadt, uint8_t unloadt, bool dma ) {
 
-	uint32_t data = 0;
+	uint8_t data = 0;
 
 	//! send command
 	flpydsk_send_command (FDC_CMD_SPECIFY);
 	data = ( (stepr & 0xf) << 4) | (unloadt & 0xf);
 		flpydsk_send_command (data);
-	data = (loadt) << 1 | (dma==false) ? 0 : 1;
+	data = (( loadt << 1 ) | ( (dma) ? 0 : 1 ) );
 		flpydsk_send_command (data);
 }
 
 //! calibrates the drive
-int flpydsk_calibrate (uint32_t drive) {
+int flpydsk_calibrate (uint8_t drive) {
 
 	uint32_t st0, cyl;
 
@@ -439,8 +448,11 @@ void flpydsk_read_sector_imp (uint8_t head, uint8_t track, uint8_t sector) {
 
 	uint32_t st0, cyl;
 
+	//! initialize DMA
+	dma_initialize_floppy ((uint8_t*) DMA_BUFFER, 512 );
+
 	//! set the DMA for read transfer
-	flpydsk_dma_read ();
+	dma_set_read ( FDC_DMA_CHANNEL );
 
 	//! read in a sector
 	flpydsk_send_command (
@@ -466,7 +478,7 @@ void flpydsk_read_sector_imp (uint8_t head, uint8_t track, uint8_t sector) {
 }
 
 //! seek to given track/cylinder
-int flpydsk_seek ( uint32_t cyl, uint32_t head ) {
+int flpydsk_seek ( uint8_t cyl, uint8_t head ) {
 
 	uint32_t st0, cyl0;
 
@@ -510,9 +522,6 @@ void flpydsk_install (int irq) {
 	//! install irq handler
 	setvect (irq, i86_flpy_irq);
 
-	//! initialize the DMA for FDC
-	flpydsk_initialize_dma ();
-
 	//! reset the fdc
 	flpydsk_reset ();
 
@@ -545,11 +554,11 @@ uint8_t* flpydsk_read_sector (int sectorLBA) {
 
 	//! turn motor on and seek to track
 	flpydsk_control_motor (true);
-	if (flpydsk_seek (track, head) != 0)
+	if (flpydsk_seek ((uint8_t)track, (uint8_t)head) != 0)
 		return 0;
 
 	//! read sector and turn motor off
-	flpydsk_read_sector_imp (head, track, sector);
+	flpydsk_read_sector_imp ((uint8_t)head, (uint8_t)track, (uint8_t)sector);
 	flpydsk_control_motor (false);
 
 	//! warning: this is a bit hackish

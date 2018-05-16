@@ -29,6 +29,9 @@
 //    INTERFACE FUNCTION PROTOTYPES
 //============================================================================
 
+//! sets DMA address
+void flpydsk_set_dma (int addr);
+
 //! install floppy driver
 void flpydsk_install (int irq);
 

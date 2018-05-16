@@ -2,7 +2,7 @@
    main.cpp
 		-Kernel main program
 
-   modified\ Feb 18 2009
+   modified\ Jul 19 2009
    arthor\ Mike
 ******************************************************************************/
 
@@ -86,6 +86,9 @@ void init (multiboot_info* bootinfo) {
 
 	//! install floppy disk to IR 38, uses IRQ 6
 	flpydsk_install (38);
+
+	//! set DMA buffer to 64k
+	flpydsk_set_dma (0x8000);
 }
 
 int ticks;
@@ -198,7 +201,7 @@ void cmd_read_sect () {
 	sectornum = atoi (sectornumbuf);
 
 	DebugPrintf ("\n\rSector %i contents:\n\n\r", sectornum);
-
+			
 	//! read sector from disk
 	sector = flpydsk_read_sector ( sectornum );
 
@@ -209,8 +212,7 @@ void cmd_read_sect () {
 		for ( int c = 0; c < 4; c++ ) {
 
 			for (int j = 0; j < 128; j++)
-				;
-				//DebugPrintf ("0x%x ", sector[ i + j ]);
+				DebugPrintf ("0x%x ", sector[ i + j ]);
 			i += 128;
 
 			DebugPrintf("\n\rPress any key to continue\n\r");
@@ -239,7 +241,7 @@ bool run_cmd (char* cmd_buf) {
 	//! help
 	else if (strcmp (cmd_buf, "help") == 0) {
 
-		DebugPuts ("\nOS Development Series Floppy Disk Demo");
+		DebugPuts ("\nOS Development Series DMAC Programming Demo");
 		DebugPuts ("Supported commands:\n");
 		DebugPuts (" - exit: quits and halts the system\n");
 		DebugPuts (" - cls: clears the display\n");
@@ -287,7 +289,7 @@ int _cdecl kmain (multiboot_info* bootinfo) {
 	init (bootinfo);
 
 	DebugGotoXY (0,0);
-	DebugPuts ("OSDev Series FDC Programming Demo");
+	DebugPuts ("OSDev Series DMAC Programming Demo");
 	DebugPuts ("\nType \"exit\" to quit, \"help\" for a list of commands\n");
 	DebugPuts ("+-------------------------------------------------------+\n");
 

@@ -58,6 +58,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="cpu.cpp" />
+    <ClCompile Include="dma.cpp" />
     <ClCompile Include="gdt.cpp" />
     <ClCompile Include="Hal.cpp" />
     <ClCompile Include="idt.cpp" />
@@ -66,6 +67,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cpu.h" />
+    <ClInclude Include="dma.h" />
     <ClInclude Include="gdt.h" />
     <ClInclude Include="idt.h" />
     <ClInclude Include="pic.h" />
