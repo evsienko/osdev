@@ -11,6 +11,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Hal", "Hal\Hal.vcxproj", "{
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Keyboard", "Keyboard\Keyboard.vcxproj", "{8AB6CBCB-06D9-4C7A-9609-F77A5157AD07}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FloppyDisk", "FloppyDisk\FloppyDisk.vcxproj", "{7093A2AB-78D4-4CD3-891F-675CEA15D9F9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -33,11 +35,15 @@ Global
 		{8AB6CBCB-06D9-4C7A-9609-F77A5157AD07}.Debug|Win32.Build.0 = Debug|Win32
 		{8AB6CBCB-06D9-4C7A-9609-F77A5157AD07}.Release|Win32.ActiveCfg = Release|Win32
 		{8AB6CBCB-06D9-4C7A-9609-F77A5157AD07}.Release|Win32.Build.0 = Release|Win32
+		{7093A2AB-78D4-4CD3-891F-675CEA15D9F9}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7093A2AB-78D4-4CD3-891F-675CEA15D9F9}.Debug|Win32.Build.0 = Debug|Win32
+		{7093A2AB-78D4-4CD3-891F-675CEA15D9F9}.Release|Win32.ActiveCfg = Release|Win32
+		{7093A2AB-78D4-4CD3-891F-675CEA15D9F9}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {9DEEEFDE-EF2A-4291-A8A0-0611431279E4}
+		SolutionGuid = {F7802A8E-8EF6-4568-8152-32D479C79260}
 	EndGlobalSection
 EndGlobal

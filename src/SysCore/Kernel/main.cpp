@@ -10,6 +10,8 @@
 #include <hal.h>
 #include <kybrd.h>
 #include <string.h>
+#include <flpydsk.h>
+#include <stdio.h>
 
 #include "DebugDisplay.h"
 #include "exception.h"
@@ -76,8 +78,14 @@ void init (multiboot_info* bootinfo) {
 	//! initialize our vmm
 	vmmngr_initialize ();
 
-	//! install the keyboard to IR 33
+	//! install the keyboard to IR 33, uses IRQ 1
 	kkybrd_install (33);
+
+	//! set drive 0 as current drive
+	flpydsk_set_working_drive (0);
+
+	//! install floppy disk to IR 38, uses IRQ 6
+	flpydsk_install (38);
 }
 
 int ticks;
@@ -112,8 +120,6 @@ void cmd () {
 
 //! gets next command
 void get_cmd (char* buf, int n) {
-
-	cmd ();
 
 	KEYCODE key = KEY_UNKNOWN;
 	bool	BufChar;
@@ -180,6 +186,43 @@ void get_cmd (char* buf, int n) {
 	buf [i] = '\0';
 }
 
+//! read sector command
+void cmd_read_sect () {
+
+	uint32_t sectornum = 0;
+	char sectornumbuf [4];
+	uint8_t* sector = 0;
+
+	DebugPrintf ("\n\rPlease type in the sector number [0 is default] >");
+	get_cmd (sectornumbuf, 3);
+	sectornum = atoi (sectornumbuf);
+
+	DebugPrintf ("\n\rSector %i contents:\n\n\r", sectornum);
+
+	//! read sector from disk
+	sector = flpydsk_read_sector ( sectornum );
+
+	//! display sector
+	if (sector!=0) {
+
+		int i = 0;
+		for ( int c = 0; c < 4; c++ ) {
+
+			for (int j = 0; j < 128; j++)
+				;
+				//DebugPrintf ("0x%x ", sector[ i + j ]);
+			i += 128;
+
+			DebugPrintf("\n\rPress any key to continue\n\r");
+			getch ();
+		}
+	}
+	else
+		DebugPrintf ("\n\r*** Error reading sector from disk");
+
+	DebugPrintf ("\n\rDone.");
+}
+
 //! our simple command parser
 bool run_cmd (char* cmd_buf) {
 
@@ -196,12 +239,18 @@ bool run_cmd (char* cmd_buf) {
 	//! help
 	else if (strcmp (cmd_buf, "help") == 0) {
 
-		DebugPuts ("\nOS Development Series Keyboard Programming Demo");
-		DebugPuts ("\nwith a basic Command Line Interface (CLI)\n\n");
+		DebugPuts ("\nOS Development Series Floppy Disk Demo");
 		DebugPuts ("Supported commands:\n");
 		DebugPuts (" - exit: quits and halts the system\n");
 		DebugPuts (" - cls: clears the display\n");
 		DebugPuts (" - help: displays this message\n");
+		DebugPuts (" - read: reads a specific sector and displays it in hex\n");
+		DebugPuts (" - reset: Resets and recalibrates floppy for reading\n");
+	}
+
+	//! read sector
+	else if (strcmp (cmd_buf, "read") == 0) {
+		cmd_read_sect ();
 	}
 
 	//! invalid command
@@ -219,6 +268,9 @@ void run () {
 
 	while (1) {
 
+		//! display prompt
+		cmd ();
+
 		//! get command
 		get_cmd (cmd_buf, 98);
 
@@ -235,7 +287,7 @@ int _cdecl kmain (multiboot_info* bootinfo) {
 	init (bootinfo);
 
 	DebugGotoXY (0,0);
-	DebugPuts ("OSDev Series Keyboard Demo");
+	DebugPuts ("OSDev Series FDC Programming Demo");
 	DebugPuts ("\nType \"exit\" to quit, \"help\" for a list of commands\n");
 	DebugPuts ("+-------------------------------------------------------+\n");
 

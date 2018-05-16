@@ -7,3 +7,4 @@
 /src/SysCore/Hal/Debug
 /src/SysCore/Keyboard/Debug
 /src/SysCore/*.ncb
+/src/SysCore/FloppyDisk/Debug

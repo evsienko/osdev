@@ -55,7 +55,7 @@
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
-      <AdditionalIncludeDirectories>..\Include\;..\Keyboard;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Include\;..\Keyboard;..\FloppyDisk;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>ARCH_X86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <IgnoreStandardIncludePath>true</IgnoreStandardIncludePath>
       <StringPooling>false</StringPooling>
@@ -73,7 +73,7 @@
     </ProjectReference>
     <Link>
       <AdditionalOptions>/ALIGN:512 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>keyboard.lib</AdditionalDependencies>
+      <AdditionalDependencies>keyboard.lib;floppydisk.lib</AdditionalDependencies>
       <OutputFile>C:\data\os dev\bin\KRNL32.EXE</OutputFile>
       <AdditionalLibraryDirectories>..\Lib\;..\debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
