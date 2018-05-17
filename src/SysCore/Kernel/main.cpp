@@ -6,11 +6,39 @@
    arthor\ Mike
 ******************************************************************************/
 
+/**
+Chapter 22
+----------
+
+NEW:
+
+string.cpp:  strchr()
+fat12.h/cpp: FAT12 minidriver
+fsys.h/cpp:  VFS
+main.cpp:    READ command updated
+
+KNOWN BUGS:
+
+-There is a bug found in get_cmd(). It seems to add 1 extra character to the buffer
+ when the entered text is all caps. Works fine if its in lowercase
+
+-In volOpenFile(), fsys.cpp: if input contains ':', an additional character, 0x2, is added
+ before ':' on input of function. For example, a:main.cpp becomes:
+
+ 'a' '' ':' 'm' 'a' 'i' 'n' '.' 'c' 'p' 'p' ''
+
+-. and .. in pathnames also dont seem to work. Need to look into
+
+Currently a workaround is provided in the routine.
+Several chapters may need to be updated, please be patient. :-)
+**/
+
 #include <bootinfo.h>
 #include <hal.h>
 #include <kybrd.h>
 #include <string.h>
 #include <flpydsk.h>
+#include <fat12.h>
 #include <stdio.h>
 
 #include "DebugDisplay.h"
@@ -18,6 +46,9 @@
 #include "mmngr_phys.h"
 #include "mmngr_virtual.h"
 
+/**
+*	Memory region
+*/
 struct memory_region {
 
 	uint32_t	startLo;	//base address
@@ -30,7 +61,13 @@ struct memory_region {
 
 uint32_t kernelSize=0;
 
+/**
+*	Initialization
+*/
 void init (multiboot_info* bootinfo) {
+
+	//! initialize our vmm
+	vmmngr_initialize ();
 
 	//! clear and init display
 	DebugClrScr (0x13);
@@ -75,9 +112,6 @@ void init (multiboot_info* bootinfo) {
 	}
 	pmmngr_deinit_region (0x100000, kernelSize*512);
 
-	//! initialize our vmm
-	vmmngr_initialize ();
-
 	//! install the keyboard to IR 33, uses IRQ 1
 	kkybrd_install (33);
 
@@ -87,13 +121,12 @@ void init (multiboot_info* bootinfo) {
 	//! install floppy disk to IR 38, uses IRQ 6
 	flpydsk_install (38);
 
-	//! set DMA buffer to 64k
-	flpydsk_set_dma (0x8000);
+	//! initialize FAT12 filesystem
+	fsysFatInitialize ();
 }
 
-int ticks;
-
 //! sleeps a little bit. This uses the HALs get_tick_count() which in turn uses the PIT
+int ticks;
 void sleep (int ms) {
 
 	ticks = ms + get_tick_count ();
@@ -189,40 +222,55 @@ void get_cmd (char* buf, int n) {
 	buf [i] = '\0';
 }
 
-//! read sector command
-void cmd_read_sect () {
+//! read command
+void cmd_read () {
 
-	uint32_t sectornum = 0;
-	char sectornumbuf [4];
-	uint8_t* sector = 0;
+	//! get pathname
+	char path[32];
+	DebugPrintf ("\n\rex: \"file.txt\", \"a:\\file.txt\", \"a:\\folder\\file.txt\"\n\rFilename> ");
+	get_cmd (path,32);
 
-	DebugPrintf ("\n\rPlease type in the sector number [0 is default] >");
-	get_cmd (sectornumbuf, 3);
-	sectornum = atoi (sectornumbuf);
+	//! open file
+	FILE file = volOpenFile (path);
 
-	DebugPrintf ("\n\rSector %i contents:\n\n\r", sectornum);
-			
-	//! read sector from disk
-	sector = flpydsk_read_sector ( sectornum );
+	//! test for invalid file
+	if (file.flags == FS_INVALID) {
 
-	//! display sector
-	if (sector!=0) {
+		DebugPrintf ("\n\rUnable to open file");
+		return;
+	}
 
-		int i = 0;
-		for ( int c = 0; c < 4; c++ ) {
+	//! cant display directories
+	if (( file.flags & FS_DIRECTORY ) == FS_DIRECTORY) {
 
-			for (int j = 0; j < 128; j++)
-				DebugPrintf ("0x%x ", sector[ i + j ]);
-			i += 128;
+		DebugPrintf ("\n\rUnable to display contents of directory.");
+		return;
+	}
 
-			DebugPrintf("\n\rPress any key to continue\n\r");
+	//! top line
+	DebugPrintf ("\n\n\r-------[%s]-------\n\r", file.name);
+
+	//! display file contents
+	while (file.eof != 1) {
+
+		//! read cluster
+		unsigned char buf[512];
+		volReadFile ( &file, buf, 512);
+
+		//! display file
+		for (int i=0; i<512; i++)
+			DebugPutc (buf[i]);
+
+		//! wait for input to continue if not EOF
+		if (file.eof != 1) {
+			DebugPrintf ("\n\r------[Press a key to continue]------");
 			getch ();
+			DebugPrintf ("\r"); //clear last line
 		}
 	}
-	else
-		DebugPrintf ("\n\r*** Error reading sector from disk");
 
-	DebugPrintf ("\n\rDone.");
+	//! done :)
+	DebugPrintf ("\n\n\r--------[EOF]--------");
 }
 
 //! our simple command parser
@@ -241,18 +289,18 @@ bool run_cmd (char* cmd_buf) {
 	//! help
 	else if (strcmp (cmd_buf, "help") == 0) {
 
-		DebugPuts ("\nOS Development Series DMAC Programming Demo");
+		DebugPuts ("\nOS Development Series VFS Programming Demo");
 		DebugPuts ("Supported commands:\n");
 		DebugPuts (" - exit: quits and halts the system\n");
 		DebugPuts (" - cls: clears the display\n");
 		DebugPuts (" - help: displays this message\n");
-		DebugPuts (" - read: reads a specific sector and displays it in hex\n");
+		DebugPuts (" - read: reads a file\n");
 		DebugPuts (" - reset: Resets and recalibrates floppy for reading\n");
 	}
 
 	//! read sector
 	else if (strcmp (cmd_buf, "read") == 0) {
-		cmd_read_sect ();
+		cmd_read ();
 	}
 
 	//! invalid command
@@ -289,7 +337,7 @@ int _cdecl kmain (multiboot_info* bootinfo) {
 	init (bootinfo);
 
 	DebugGotoXY (0,0);
-	DebugPuts ("OSDev Series DMAC Programming Demo");
+	DebugPuts ("OSDev Series VFS Programming Demo");
 	DebugPuts ("\nType \"exit\" to quit, \"help\" for a list of commands\n");
 	DebugPuts ("+-------------------------------------------------------+\n");
 

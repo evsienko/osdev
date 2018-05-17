@@ -25,10 +25,6 @@ typedef uint32_t virtual_addr;
 #define PAGES_PER_TABLE 1024
 #define PAGES_PER_DIR	1024
 
-#define PAGE_DIRECTORY_INDEX(x) (((x) >> 22) & 0x3ff)
-#define PAGE_TABLE_INDEX(x) (((x) >> 12) & 0x3ff)
-#define PAGE_GET_PHYSICAL_ADDRESS(x) (*x & ~0xfff)
-
 //============================================================================
 //    INTERFACE CLASS PROTOTYPES / EXTERNAL CLASS REFERENCES
 //============================================================================
@@ -54,9 +50,6 @@ struct pdirectory {
 //============================================================================
 //    INTERFACE FUNCTION PROTOTYPES
 //============================================================================
-
-//! maps phys to virtual address
-extern void vmmngr_map_page (void* phys, void* virt);
 
 //! initialize the memory manager
 extern void vmmngr_initialize ();

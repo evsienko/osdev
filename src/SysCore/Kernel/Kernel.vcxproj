@@ -73,7 +73,7 @@
     </ProjectReference>
     <Link>
       <AdditionalOptions>/ALIGN:512 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>keyboard.lib;floppydisk.lib</AdditionalDependencies>
+      <AdditionalDependencies>keyboard.lib;floppydisk.lib;fat12.lib</AdditionalDependencies>
       <OutputFile>C:\data\os dev\bin\KRNL32.EXE</OutputFile>
       <AdditionalLibraryDirectories>..\Lib\;..\debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
@@ -102,6 +102,7 @@ call "build.bat"</Command>
     <ClCompile Include="DebugDisplay.cpp" />
     <ClCompile Include="entry.cpp" />
     <ClCompile Include="exception.cpp" />
+    <ClCompile Include="fsys.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mmngr_phys.cpp" />
     <ClCompile Include="mmngr_virtual.cpp" />

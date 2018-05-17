@@ -8,3 +8,4 @@
 /src/SysCore/Keyboard/Debug
 /src/SysCore/*.ncb
 /src/SysCore/FloppyDisk/Debug
+/src/SysCore/Fat12/Debug

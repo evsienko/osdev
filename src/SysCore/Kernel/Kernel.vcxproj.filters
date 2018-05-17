@@ -2,10 +2,10 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Init">
-      <UniqueIdentifier>{098bfb7e-df61-4248-a7a4-aec0591e171c}</UniqueIdentifier>
+      <UniqueIdentifier>{38c7b5b7-7897-47bc-bb32-7e90a15351aa}</UniqueIdentifier>
     </Filter>
     <Filter Include="Debug">
-      <UniqueIdentifier>{6bd8f28f-cc2f-490d-98c7-8a003631501a}</UniqueIdentifier>
+      <UniqueIdentifier>{cc0a2a2e-85f0-416c-a751-6e0631231a3e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -19,6 +19,7 @@
       <Filter>Debug</Filter>
     </ClCompile>
     <ClCompile Include="exception.cpp" />
+    <ClCompile Include="fsys.cpp" />
     <ClCompile Include="mmngr_phys.cpp" />
     <ClCompile Include="mmngr_virtual.cpp" />
     <ClCompile Include="panic.cpp" />

@@ -76,7 +76,7 @@
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="true"
 				AdditionalOptions="/ALIGN:512"
-				AdditionalDependencies="$(NOINHERIT) keyboard.lib floppydisk.lib"
+				AdditionalDependencies="$(NOINHERIT) keyboard.lib floppydisk.lib fat12.lib"
 				OutputFile="A:\KRNL32.EXE"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\Lib\;..\debug\"
@@ -218,6 +218,10 @@
 		</File>
 		<File
 			RelativePath=".\exception.h"
+			>
+		</File>
+		<File
+			RelativePath=".\fsys.cpp"
 			>
 		</File>
 		<File

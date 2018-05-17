@@ -153,7 +153,7 @@ const int FLPY_SECTORS_PER_TRACK = 18;
 
 //! dma tranfer buffer starts here and ends at 0x1000+64k
 //! You can change this as needed. It must be below 16MB and in idenitity mapped memory!
-int DMA_BUFFER = 0x1000;
+const int DMA_BUFFER = 0x1000;
 
 //! FDC uses DMA channel 2
 const int FDC_DMA_CHANNEL = 2;
@@ -229,12 +229,6 @@ bool _cdecl dma_initialize_floppy(uint8_t* buffer, unsigned length){
    dma_unmask_all( 1 );//Unmask channel 2
 
    return true;
-}
-
-//! sets DMA base address
-void flpydsk_set_dma (int addr) {
-
-	DMA_BUFFER = addr;
 }
 
 /**

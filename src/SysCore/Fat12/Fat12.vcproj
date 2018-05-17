@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="FloppyDisk"
-	ProjectGUID="{7093A2AB-78D4-4CD3-891F-675CEA15D9F9}"
+	Name="Fat12"
+	ProjectGUID="{5E94EE5E-CFEB-4B3F-B275-24843FC2AE74}"
 	>
 	<Platforms>
 		<Platform
@@ -36,16 +36,8 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="3"
-				OmitFramePointers="true"
-				AdditionalIncludeDirectories="..\Include\"
-				PreprocessorDefinitions="ARCH_X86"
-				IgnoreStandardIncludePath="true"
-				StructMemberAlignment="1"
+				AdditionalIncludeDirectories="C:\djgpp\Demo22\SysCore\Kernel;C:\djgpp\Demo22\SysCore\Include"
 				BufferSecurityCheck="false"
-				RuntimeTypeInfo="false"
-				AssemblerOutput="4"
-				WarningLevel="4"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -140,11 +132,11 @@
 	</References>
 	<Files>
 		<File
-			RelativePath=".\flpydsk.cpp"
+			RelativePath=".\fat12.cpp"
 			>
 		</File>
 		<File
-			RelativePath="..\Include\flpydsk.h"
+			RelativePath="..\Include\fat12.h"
 			>
 		</File>
 	</Files>
