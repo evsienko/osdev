@@ -146,52 +146,182 @@ void vmmngr_free_page (pt_entry* e) {
 	pt_entry_del_attrib (e, I86_PTE_PRESENT);
 }
 
+// chapter 21
+#define PAGE_DIRECTORY_INDEX(x) (((x) >> 22) & 0x3ff)
+#define PAGE_TABLE_INDEX(x) (((x) >> 12) & 0x3ff)
+#define PAGE_GET_PHYSICAL_ADDRESS(x) (*x & ~0xfff)
+
 void vmmngr_initialize () {
 
-	//! allocate default page table
-	ptable* table = (ptable*) pmmngr_alloc_block ();
-	if (!table)
-		return;
+	//taken from chapter 21
 
-	//! clear page table
-	vmmngr_ptable_clear (table);
+	   //! allocate default page table
+   ptable* table = (ptable*) pmmngr_alloc_block ();
+   if (!table)
+      return;
 
-	//! idenitity map the page table (First 4mb of virtual memory mapped to same phys address)
-	for (int i=0, frame=0; i<1024; i++, frame+=4096) {
+   //! allocates 3gb page table
+   ptable* table2 = (ptable*) pmmngr_alloc_block ();
+   if (!table2)
+      return;
 
-		//! create a new page
-		pt_entry page=0;
-		pt_entry_add_attrib (&page, I86_PTE_PRESENT);
-		pt_entry_add_attrib (&page, I86_PTE_USER);
-		pt_entry_set_frame (&page, frame);
+   //! clear page table
+   memset (table, 0, sizeof (ptable));
 
-		//! ...and add it to the page table
-		table->m_entries [vmmngr_ptable_virt_to_index (frame) ] = page;
-	}
+   //! 1st 4mb are idenitity mapped
+   for (int i=0, frame=0x0, virt=0x00000000; i<1024; i++, frame+=4096, virt+=4096) {
 
-	//! create default directory table
-	pdirectory*	dir = (pdirectory*) pmmngr_alloc_blocks (3);
-	if (!dir)
-		return;
+      //! create a new page
+      pt_entry page=0;
+      pt_entry_add_attrib (&page, I86_PTE_PRESENT);
+      pt_entry_set_frame (&page, frame);
 
-	//! clear directory table and set it as current
-	vmmngr_pdirectory_clear (dir);
+      //! ...and add it to the page table
+      table2->m_entries [PAGE_TABLE_INDEX (virt) ] = page;
+   }
 
-	//! get first entry in dir table and set it up to point to our table
-	pd_entry* entry = vmmngr_pdirectory_lookup_entry (dir,0);
-	pd_entry_add_attrib (entry, I86_PDE_PRESENT);
-	pd_entry_add_attrib (entry, I86_PDE_WRITABLE);
-	pt_entry_add_attrib (entry, I86_PDE_USER);
-	pd_entry_set_frame (entry, (physical_addr)table);
+   //! map 1mb to 3gb (where we are at)
+   for (int i=0, frame=0x100000, virt=0xc0000000; i<1024; i++, frame+=4096, virt+=4096) {
 
-	//! store current PDBR
-	_cur_pdbr = (physical_addr) &dir->m_entries;
+      //! create a new page
+      pt_entry page=0;
+      pt_entry_add_attrib (&page, I86_PTE_PRESENT);
+      pt_entry_set_frame (&page, frame);
 
-	//! switch to our page directory
-	vmmngr_switch_pdirectory (dir);
+      //! ...and add it to the page table
+      table->m_entries [PAGE_TABLE_INDEX (virt) ] = page;
+   }
 
-	//! enable paging
-	pmmngr_paging_enable (true);
+   //! create default directory table
+   pdirectory*   dir = (pdirectory*) pmmngr_alloc_blocks (3);
+   if (!dir)
+      return;
+
+  //! clear directory table and set it as current
+  memset (dir, 0, sizeof (pdirectory));
+
+   //! get first entry in dir table and set it up to point to our table
+   pd_entry* entry = &dir->m_entries [PAGE_DIRECTORY_INDEX (0xc0000000) ];
+   pd_entry_add_attrib (entry, I86_PDE_PRESENT);
+   pd_entry_add_attrib (entry, I86_PDE_WRITABLE);
+   pd_entry_set_frame (entry, (physical_addr)table);
+
+   pd_entry* entry2 = &dir->m_entries [PAGE_DIRECTORY_INDEX (0x00000000) ];
+   pd_entry_add_attrib (entry2, I86_PDE_PRESENT);
+   pd_entry_add_attrib (entry2, I86_PDE_WRITABLE);
+   pd_entry_set_frame (entry2, (physical_addr)table2);
+
+   //! store current PDBR
+   _cur_pdbr = (physical_addr) &dir->m_entries;
+
+   //! switch to our page directory
+   vmmngr_switch_pdirectory (dir);
+
+   //! enable paging
+   pmmngr_paging_enable (true);
+}
+
+/*
+	Additions for Chapter 24
+*/
+
+/**
+* Allocates new page table
+* \param dir Page directory
+* \param virt Virtual address
+* \param flags Page flags
+* \ret Status code
+*/
+int vmmngr_createPageTable (pdirectory* dir, uint32_t virt, uint32_t flags) {
+
+        pd_entry* pagedir = dir->m_entries;
+        if (pagedir [virt >> 22] == 0) {
+			void* block = pmmngr_alloc_block();
+			if (!block)
+				return 0; /* Should call debugger */
+            pagedir [virt >> 22] = ((uint32_t) block) | flags;
+            memset ((uint32_t*) pagedir[virt >> 22], 0, 4096);
+
+			/* map page table into directory */
+			vmmngr_mapPhysicalAddress (dir, (uint32_t) block, (uint32_t) block, flags);
+        }
+		return 1; /* success */
+}
+
+/**
+* Map physical address to virtual
+* \param dir Page directory
+* \param virt Virtual address
+* \param phys Physical address
+* \param flags Page flags
+*/
+void vmmngr_mapPhysicalAddress (pdirectory* dir, uint32_t virt, uint32_t phys, uint32_t flags) {
+
+        pd_entry* pagedir = dir->m_entries;
+        if (pagedir [virt >> 22] == 0)
+                vmmngr_createPageTable (dir, virt, flags);
+        ((uint32_t*) (pagedir[virt >> 22] & ~0xfff))[virt << 10 >> 10 >> 12] = phys | flags;
+}
+
+/**
+* Unmap page table
+* \param dir Page directory
+* \param virt Virtual address
+*/
+void vmmngr_unmapPageTable (pdirectory* dir, uint32_t virt) {
+        pd_entry* pagedir = dir->m_entries;
+        if (pagedir [virt >> 22] != 0) {
+
+			/* get mapped frame */
+			void* frame = (void*) (pagedir [virt >> 22] & 0x7FFFF000);
+
+			/* unmap frame */
+			pmmngr_free_block (frame);
+			pagedir [virt >> 22] = 0;
+		}
+}
+
+/**
+* Unmap address
+* \param dir Page directory
+* \param virt Virtual address
+*/
+void vmmngr_unmapPhysicalAddress (pdirectory* dir, uint32_t virt) {
+		/* note: we don't unallocate physical address here; callee does that */
+		pd_entry* pagedir = dir->m_entries;
+        if (pagedir [virt >> 22] != 0)
+                vmmngr_unmapPageTable (dir, virt);
+//      ((uint32_t*) (pagedir[virt >> 22] & ~0xfff))[virt << 10 >> 10 >> 12] = 0;
+}
+
+/**
+* Create address space
+* \ret Page directory
+*/
+pdirectory* vmmngr_createAddressSpace () {
+        pdirectory* dir = 0;
+
+        /* allocate page directory */
+        dir = (pdirectory*) pmmngr_alloc_block ();
+        if (!dir)
+                return 0;
+
+        /* clear memory (marks all page tables as not present) */
+        memset (dir, 0, sizeof (pdirectory));
+        return dir;
+}
+
+/**
+* Get physical address from virtual
+* \param dir Page directory
+* \param virt Virtual address
+* \ret Physical address
+*/
+void* vmmngr_getPhysicalAddress (pdirectory* dir, uint32_t virt) {
+        pd_entry* pagedir = dir->m_entries;
+        if (pagedir [virt >> 22] == 0)
+                return 0;
+        return (void*) ((uint32_t*) (pagedir[virt >> 22] & ~0xfff))[virt << 10 >> 10 >> 12];
 }
 
 //============================================================================

@@ -50,7 +50,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <AdditionalOptions>/Oy %(AdditionalOptions)</AdditionalOptions>
-      <Optimization>MaxSpeed</Optimization>
+      <Optimization>MinSpace</Optimization>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
@@ -77,7 +77,7 @@
       <OutputFile>C:\data\os dev\bin\KRNL32.EXE</OutputFile>
       <AdditionalLibraryDirectories>..\Lib\;..\debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
-      <GenerateMapFile>true</GenerateMapFile>
+      <GenerateMapFile>false</GenerateMapFile>
       <MapFileName>Kernel.map</MapFileName>
       <SubSystem>Native</SubSystem>
       <Driver>Driver</Driver>
@@ -108,15 +108,18 @@ call "build.bat"</Command>
     <ClCompile Include="mmngr_virtual.cpp" />
     <ClCompile Include="panic.cpp" />
     <ClCompile Include="sysapi.cpp" />
+    <ClCompile Include="task.cpp" />
     <ClCompile Include="vmmngr_pde.cpp" />
     <ClCompile Include="vmmngr_pte.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DebugDisplay.h" />
     <ClInclude Include="exception.h" />
+    <ClInclude Include="image.h" />
     <ClInclude Include="mmngr_phys.h" />
     <ClInclude Include="mmngr_virtual.h" />
     <ClInclude Include="sysapi.h" />
+    <ClInclude Include="task.h" />
     <ClInclude Include="vmmngr_pde.h" />
     <ClInclude Include="vmmngr_pte.h" />
   </ItemGroup>

@@ -38,6 +38,7 @@ Several chapters may need to be updated, please be patient. :-)
 #include "exception.h"
 #include "mmngr_phys.h"
 #include "mmngr_virtual.h"
+#include "task.h"
 
 /**
 *	Memory region
@@ -99,7 +100,7 @@ extern void syscall_init ();
 void init (multiboot_info* bootinfo) {
 
 	//! initialize our vmm
-	vmmngr_initialize ();
+//	vmmngr_initialize ();
 
 	//! clear and init display
 	DebugClrScr (0x13);
@@ -128,7 +129,7 @@ void init (multiboot_info* bootinfo) {
 	setvect (18,(void (__cdecl &)(void))machine_check_abort);
 	setvect (19,(void (__cdecl &)(void))simd_fpu_fault);
 
-	pmmngr_init (bootinfo->m_memorySize, 0xC0000000 + kernelSize*512);
+	pmmngr_init ((size_t) bootinfo->m_memorySize, 0xC0000000 + kernelSize*512);
 
 	memory_region*	region = (memory_region*)0x1000;
 
@@ -143,6 +144,13 @@ void init (multiboot_info* bootinfo) {
 		pmmngr_init_region (region[i].startLo, region[i].sizeLo);
 	}
 	pmmngr_deinit_region (0x100000, kernelSize*512);
+	/*
+		kernel stack location
+	*/
+	pmmngr_deinit_region (0x0, 0x10000);
+
+	//! initialize our vmm
+	vmmngr_initialize ();
 
 	//! install the keyboard to IR 33, uses IRQ 1
 	kkybrd_install (33);
@@ -160,7 +168,7 @@ void init (multiboot_info* bootinfo) {
 	syscall_init ();
 
 	//! initialize TSS
-	install_tss (5,0x10,0);
+	install_tss (5,0x10,0x9000);
 }
 
 //! sleeps a little bit. This uses the HALs get_tick_count() which in turn uses the PIT
@@ -317,7 +325,7 @@ void go_user () {
 	_asm mov [stack], esp
 
 	extern void tss_set_stack (uint16_t, uint16_t);
-	tss_set_stack (0x10,stack);
+	tss_set_stack (0x10,(uint16_t) stack & 0xffff);
 
 	enter_usermode();
 
@@ -330,6 +338,22 @@ void go_user () {
 
 	//! cant do CLI+HLT here, so loop instead
 	while(1);
+}
+
+// proc (process) command
+void cmd_proc () {
+
+	int ret = 0;
+	char name[32];
+
+	DebugPrintf ("\n\rProgram file: ");
+	get_cmd (name,32);
+
+	ret = createProcess (name);
+	if (ret==0)
+		DebugPrintf ("\n\rError creating process");
+
+	executeProcess ();
 }
 
 //! our simple command parser
@@ -352,18 +376,24 @@ bool run_cmd (char* cmd_buf) {
 	//! help
 	else if (strcmp (cmd_buf, "help") == 0) {
 
-		DebugPuts ("\nOS Development Series User Mode Programming Demo");
+		DebugPuts ("\nOS Development Series Process Management Demo");
 		DebugPuts ("Supported commands:\n");
 		DebugPuts (" - exit: quits and halts the system\n");
 		DebugPuts (" - cls: clears the display\n");
 		DebugPuts (" - help: displays this message\n");
 		DebugPuts (" - read: reads a file\n");
 		DebugPuts (" - reset: Resets and recalibrates floppy for reading\n");
+		DebugPuts (" - proc: Run process");
 	}
 
 	//! read sector
 	else if (strcmp (cmd_buf, "read") == 0) {
 		cmd_read ();
+	}
+
+	//! run process
+	else if (strcmp (cmd_buf, "proc") == 0) {
+		cmd_proc();
 	}
 
 	//! invalid command
@@ -400,13 +430,14 @@ int _cdecl kmain (multiboot_info* bootinfo) {
 	init (bootinfo);
 
 	DebugGotoXY (0,0);
-	DebugPuts ("OSDev Series User Mode Programming Demo");
+	DebugPuts ("OSDev Series Process Management Demo");
 	DebugPuts ("\nType \"exit\" to quit, \"help\" for a list of commands\n");
 	DebugPuts ("+-------------------------------------------------------+\n");
 
 	run ();
 
 	DebugPrintf ("\nExit command recieved; demo halted");
+	_asm mov eax, 0xa0b0c0d0
 	for (;;);
 	return 0;
 }

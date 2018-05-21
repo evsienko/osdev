@@ -87,6 +87,17 @@ extern void vmmngr_pdirectory_clear (pdirectory* dir);
 //! get directory entry from directory table
 extern pd_entry* vmmngr_pdirectory_lookup_entry (pdirectory* p, virtual_addr addr);
 
+/*
+	New additions for chapter 24
+*/
+
+extern int         vmmngr_createPageTable      (pdirectory* dir, uint32_t virt, uint32_t flags);
+extern void        vmmngr_mapPhysicalAddress   (pdirectory* dir, uint32_t virt, uint32_t phys, uint32_t flags);
+extern void        vmmngr_unmapPageTable       (pdirectory* dir, uint32_t virt);
+extern void        vmmngr_unmapPhysicalAddress (pdirectory* dir, uint32_t virt);
+extern pdirectory* vmmngr_createAddressSpace   ();
+extern void*       vmmngr_getPhysicalAddress   (pdirectory* dir, uint32_t virt);
+
 //============================================================================
 //    INTERFACE OBJECT CLASS DEFINITIONS
 //============================================================================

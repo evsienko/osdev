@@ -7,3 +7,4 @@ nasm -f bin src\SysBoot\Stage2\Stage2.asm -o bin\KRNLDR.SYS -i src\SysBoot\Stage
 
 tools\fat_imgen-2.2.4\fat_imgen.exe -c -s bin\Boot1.bin -i bin\KRNLDR.SYS -f floppy.img
 tools\fat_imgen-2.2.4\fat_imgen.exe -m -i bin\KRNL32.EXE -f floppy.img
+tools\fat_imgen-2.2.4\fat_imgen.exe -m -i bin\proc.exe -f floppy.img

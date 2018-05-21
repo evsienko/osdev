@@ -32,14 +32,14 @@
 //============================================================================
 
 //! video memory
-uint16_t *video_memory = (uint16_t *)0xB8000;
+static uint16_t *video_memory = (uint16_t *)0xB8000;
 
 //! current position
-uint8_t cursor_x = 0;
-uint8_t cursor_y = 0;
+static uint8_t cursor_x = 0;
+static uint8_t cursor_y = 0;
 
 //! current color
-uint8_t	_color=0;
+static uint8_t	_color=0;
 
 //============================================================================
 //    INTERFACE DATA
@@ -60,7 +60,6 @@ void DebugUpdateCur (int x, int y) {
 
     // get location
     uint16_t cursorLocation = y * 80 + x;
-
 #if 0
 	// send location to vga controller to set cursor
 	disable();
@@ -70,7 +69,6 @@ void DebugUpdateCur (int x, int y) {
     outportb(0x3D5, cursorLocation);      // Send the low byte.
 	enable();
 #endif
-
 }
 
 void scroll () {
@@ -244,6 +242,7 @@ void DebugPuts (char* str) {
 }
 
 //! Displays a formatted string
+extern "C" {
 int DebugPrintf (const char* str, ...) {
 
 	if(!str)
@@ -316,6 +315,7 @@ int DebugPrintf (const char* str, ...) {
 
 	va_end (args);
 	return i;
+}
 }
 
 //============================================================================

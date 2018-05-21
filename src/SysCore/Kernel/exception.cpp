@@ -138,7 +138,8 @@ void _cdecl page_fault (uint32_t err,uint32_t eflags,uint32_t cs,uint32_t eip) {
 
 //	kernel_panic ("Page Fault at 0x%x:0x%x refrenced memory at 0x%x",
 //		cs, eip, faultAddr);
-
+//	kernel_panic ("Page Fault");
+	for (;;);
 	_asm popad
 	_asm sti
 	_asm iretd

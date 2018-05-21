@@ -2,10 +2,10 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Init">
-      <UniqueIdentifier>{4f6479d0-8199-471a-90ad-de5a8ca38b6a}</UniqueIdentifier>
+      <UniqueIdentifier>{7b9292c0-9965-402c-af2f-f34f478320b2}</UniqueIdentifier>
     </Filter>
     <Filter Include="Debug">
-      <UniqueIdentifier>{734fd520-e32f-428f-a4d9-64f3ecb24074}</UniqueIdentifier>
+      <UniqueIdentifier>{f17a98e0-7f1a-4765-b387-cf15796ee0bc}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -24,6 +24,7 @@
     <ClCompile Include="mmngr_virtual.cpp" />
     <ClCompile Include="panic.cpp" />
     <ClCompile Include="sysapi.cpp" />
+    <ClCompile Include="task.cpp" />
     <ClCompile Include="vmmngr_pde.cpp" />
     <ClCompile Include="vmmngr_pte.cpp" />
   </ItemGroup>
@@ -32,9 +33,11 @@
       <Filter>Debug</Filter>
     </ClInclude>
     <ClInclude Include="exception.h" />
+    <ClInclude Include="image.h" />
     <ClInclude Include="mmngr_phys.h" />
     <ClInclude Include="mmngr_virtual.h" />
     <ClInclude Include="sysapi.h" />
+    <ClInclude Include="task.h" />
     <ClInclude Include="vmmngr_pde.h" />
     <ClInclude Include="vmmngr_pte.h" />
   </ItemGroup>
