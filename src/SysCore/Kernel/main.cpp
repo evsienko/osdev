@@ -2,20 +2,13 @@
    main.cpp
 		-Kernel main program
 
-   modified\ Jul 19 2009
+   modified\ Oct 10 2010
    arthor\ Mike
 ******************************************************************************/
 
 /**
-Chapter 22
+Chapter 23
 ----------
-
-NEW:
-
-string.cpp:  strchr()
-fat12.h/cpp: FAT12 minidriver
-fsys.h/cpp:  VFS
-main.cpp:    READ command updated
 
 KNOWN BUGS:
 
@@ -60,6 +53,45 @@ struct memory_region {
 };
 
 uint32_t kernelSize=0;
+
+extern void enter_usermode ();
+extern void install_tss (uint32_t idx, uint16_t kernelSS, uint16_t kernelESP);
+extern void syscall_init ();
+
+//! set access bit
+#define I86_GDT_DESC_ACCESS			0x0001			//00000001
+
+//! descriptor is readable and writable. default: read only
+#define I86_GDT_DESC_READWRITE			0x0002			//00000010
+
+//! set expansion direction bit
+#define I86_GDT_DESC_EXPANSION			0x0004			//00000100
+
+//! executable code segment. Default: data segment
+#define I86_GDT_DESC_EXEC_CODE			0x0008			//00001000
+
+//! set code or data descriptor. defult: system defined descriptor
+#define I86_GDT_DESC_CODEDATA			0x0010			//00010000
+
+//! set dpl bits
+#define I86_GDT_DESC_DPL			0x0060			//01100000
+
+//! set "in memory" bit
+#define I86_GDT_DESC_MEMORY			0x0080			//10000000
+
+/**	gdt descriptor grandularity bit flags	***/
+
+//! masks out limitHi (High 4 bits of limit)
+#define I86_GDT_GRAND_LIMITHI_MASK		0x0f			//00001111
+
+//! set os defined bit
+#define I86_GDT_GRAND_OS			0x10			//00010000
+
+//! set if 32bit. default: 16 bit
+#define I86_GDT_GRAND_32BIT			0x40			//01000000
+
+//! 4k grandularity. default: none
+#define I86_GDT_GRAND_4K			0x80			//10000000
 
 /**
 *	Initialization
@@ -123,6 +155,12 @@ void init (multiboot_info* bootinfo) {
 
 	//! initialize FAT12 filesystem
 	fsysFatInitialize ();
+
+	//! initialize system calls
+	syscall_init ();
+
+	//! initialize TSS
+	install_tss (5,0x10,0);
 }
 
 //! sleeps a little bit. This uses the HALs get_tick_count() which in turn uses the PIT
@@ -273,8 +311,33 @@ void cmd_read () {
 	DebugPrintf ("\n\n\r--------[EOF]--------");
 }
 
+void go_user () {
+
+	int stack=0;
+	_asm mov [stack], esp
+
+	extern void tss_set_stack (uint16_t, uint16_t);
+	tss_set_stack (0x10,stack);
+
+	enter_usermode();
+
+	char testStr[]="\n\rWe are inside of your computer...";
+
+	//! call OS-print message
+	_asm xor eax, eax
+	_asm lea ebx, [testStr]
+	_asm int 0x80
+
+	//! cant do CLI+HLT here, so loop instead
+	while(1);
+}
+
 //! our simple command parser
 bool run_cmd (char* cmd_buf) {
+
+	if (strcmp (cmd_buf, "user") == 0) {
+		go_user ();
+	}
 
 	//! exit command
 	if (strcmp (cmd_buf, "exit") == 0) {
@@ -289,7 +352,7 @@ bool run_cmd (char* cmd_buf) {
 	//! help
 	else if (strcmp (cmd_buf, "help") == 0) {
 
-		DebugPuts ("\nOS Development Series VFS Programming Demo");
+		DebugPuts ("\nOS Development Series User Mode Programming Demo");
 		DebugPuts ("Supported commands:\n");
 		DebugPuts (" - exit: quits and halts the system\n");
 		DebugPuts (" - cls: clears the display\n");
@@ -337,7 +400,7 @@ int _cdecl kmain (multiboot_info* bootinfo) {
 	init (bootinfo);
 
 	DebugGotoXY (0,0);
-	DebugPuts ("OSDev Series VFS Programming Demo");
+	DebugPuts ("OSDev Series User Mode Programming Demo");
 	DebugPuts ("\nType \"exit\" to quit, \"help\" for a list of commands\n");
 	DebugPuts ("+-------------------------------------------------------+\n");
 

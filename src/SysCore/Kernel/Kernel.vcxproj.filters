@@ -2,10 +2,10 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Init">
-      <UniqueIdentifier>{38c7b5b7-7897-47bc-bb32-7e90a15351aa}</UniqueIdentifier>
+      <UniqueIdentifier>{4f6479d0-8199-471a-90ad-de5a8ca38b6a}</UniqueIdentifier>
     </Filter>
     <Filter Include="Debug">
-      <UniqueIdentifier>{cc0a2a2e-85f0-416c-a751-6e0631231a3e}</UniqueIdentifier>
+      <UniqueIdentifier>{734fd520-e32f-428f-a4d9-64f3ecb24074}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -23,6 +23,7 @@
     <ClCompile Include="mmngr_phys.cpp" />
     <ClCompile Include="mmngr_virtual.cpp" />
     <ClCompile Include="panic.cpp" />
+    <ClCompile Include="sysapi.cpp" />
     <ClCompile Include="vmmngr_pde.cpp" />
     <ClCompile Include="vmmngr_pte.cpp" />
   </ItemGroup>
@@ -33,6 +34,7 @@
     <ClInclude Include="exception.h" />
     <ClInclude Include="mmngr_phys.h" />
     <ClInclude Include="mmngr_virtual.h" />
+    <ClInclude Include="sysapi.h" />
     <ClInclude Include="vmmngr_pde.h" />
     <ClInclude Include="vmmngr_pte.h" />
   </ItemGroup>

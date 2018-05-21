@@ -249,6 +249,14 @@
 			>
 		</File>
 		<File
+			RelativePath=".\sysapi.cpp"
+			>
+		</File>
+		<File
+			RelativePath=".\sysapi.h"
+			>
+		</File>
+		<File
 			RelativePath=".\vmmngr_pde.cpp"
 			>
 		</File>

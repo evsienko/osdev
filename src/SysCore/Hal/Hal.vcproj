@@ -195,6 +195,18 @@
 			RelativePath=".\regs.h"
 			>
 		</File>
+		<File
+			RelativePath=".\tss.cpp"
+			>
+		</File>
+		<File
+			RelativePath=".\tss.h"
+			>
+		</File>
+		<File
+			RelativePath=".\user.cpp"
+			>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

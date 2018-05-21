@@ -210,47 +210,50 @@ FILE fsysFatOpenSubDir (FILE kFile,
 	ToDosFileName (filename, DosFileName, 11);
 	DosFileName[11]=0;
 
-	//! read directory
-	while (! kFile.eof ) {
+	if (kFile.flags != FS_INVALID) {
 
 		//! read directory
-		unsigned char buf[512];
-		fsysFatRead (&file, buf, 512);
+		while (! kFile.eof ) {
 
-		//! set directort
-		PDIRECTORY pkDir = (PDIRECTORY) buf;
+			//! read directory
+			unsigned char buf[512];
+			fsysFatRead (&file, buf, 512);
 
-		//! 16 entries in buffer
-		for (unsigned int i = 0; i < 16; i++) {
+			//! set directort
+			PDIRECTORY pkDir = (PDIRECTORY) buf;
 
-			//! get current filename
-			char name[11];
-			memcpy (name, pkDir->Filename, 11);
-			name[11]=0;
+			//! 16 entries in buffer
+			for (unsigned int i = 0; i < 16; i++) {
 
-			//! match?
-			if (strcmp (name, DosFileName) == 0) {
+				//! get current filename
+				char name[11];
+				memcpy (name, pkDir->Filename, 11);
+				name[11]=0;
 
-				//! found it, set up file info
-				strcpy (file.name, filename);
-				file.id             = 0;
-				file.currentCluster = pkDir->FirstCluster;
-				file.fileLength     = pkDir->FileSize;
-				file.eof            = 0;
-				file.fileLength     = pkDir->FileSize;
+				//! match?
+				if (strcmp (name, DosFileName) == 0) {
 
-				//! set file type
-				if (pkDir->Attrib == 0x10)
-					file.flags = FS_DIRECTORY;
-				else
-					file.flags = FS_FILE;
+					//! found it, set up file info
+					strcpy (file.name, filename);
+					file.id             = 0;
+					file.currentCluster = pkDir->FirstCluster;
+					file.fileLength     = pkDir->FileSize;
+					file.eof            = 0;
+					file.fileLength     = pkDir->FileSize;
 
-				//! return file
-				return file;
+					//! set file type
+					if (pkDir->Attrib == 0x10)
+						file.flags = FS_DIRECTORY;
+					else
+						file.flags = FS_FILE;
+
+					//! return file
+					return file;
+				}
+
+				//! go to next entry
+				pkDir++;
 			}
-
-			//! go to next entry
-			pkDir++;
 		}
 	}
 

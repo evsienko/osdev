@@ -162,6 +162,7 @@ void vmmngr_initialize () {
 		//! create a new page
 		pt_entry page=0;
 		pt_entry_add_attrib (&page, I86_PTE_PRESENT);
+		pt_entry_add_attrib (&page, I86_PTE_USER);
 		pt_entry_set_frame (&page, frame);
 
 		//! ...and add it to the page table
@@ -180,6 +181,7 @@ void vmmngr_initialize () {
 	pd_entry* entry = vmmngr_pdirectory_lookup_entry (dir,0);
 	pd_entry_add_attrib (entry, I86_PDE_PRESENT);
 	pd_entry_add_attrib (entry, I86_PDE_WRITABLE);
+	pt_entry_add_attrib (entry, I86_PDE_USER);
 	pd_entry_set_frame (entry, (physical_addr)table);
 
 	//! store current PDBR

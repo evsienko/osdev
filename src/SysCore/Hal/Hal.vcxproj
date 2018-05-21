@@ -64,6 +64,8 @@
     <ClCompile Include="idt.cpp" />
     <ClCompile Include="pic.cpp" />
     <ClCompile Include="pit.cpp" />
+    <ClCompile Include="tss.cpp" />
+    <ClCompile Include="user.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cpu.h" />
@@ -73,6 +75,7 @@
     <ClInclude Include="pic.h" />
     <ClInclude Include="pit.h" />
     <ClInclude Include="regs.h" />
+    <ClInclude Include="tss.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Lib\Lib.vcxproj">

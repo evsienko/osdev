@@ -156,12 +156,11 @@ void _cdecl disable () {
 #endif
 }
 
-
 //! sets new interrupt vector
-void _cdecl setvect (int intno, void (_cdecl far &vect) ( ) ) {
+void _cdecl setvect (int intno, void (_cdecl far &vect) ( ), int flags ) {
 
 	//! install interrupt handler! This overwrites prev interrupt descriptor
-	i86_install_ir (intno, I86_IDT_DESC_PRESENT | I86_IDT_DESC_BIT32,
+	i86_install_ir (intno, I86_IDT_DESC_PRESENT | I86_IDT_DESC_BIT32 | flags,
 		0x8, vect);
 }
 

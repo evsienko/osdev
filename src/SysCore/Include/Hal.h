@@ -72,7 +72,7 @@ extern	unsigned char	_cdecl	inportb (unsigned short id);
 extern	void			_cdecl	outportb (unsigned short id, unsigned char value);
 
 //! sets new interrupt vector
-extern	void			_cdecl	setvect (int intno, void (_cdecl far &vect) ( ) );
+extern	void			_cdecl	setvect (int intno, void (_cdecl far &vect) ( ), int flags = 0 );
 
 //! returns current interrupt at interrupt vector
 extern	void (_cdecl	far * _cdecl getvect (int intno)) ( );

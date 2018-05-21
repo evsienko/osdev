@@ -107,6 +107,7 @@ call "build.bat"</Command>
     <ClCompile Include="mmngr_phys.cpp" />
     <ClCompile Include="mmngr_virtual.cpp" />
     <ClCompile Include="panic.cpp" />
+    <ClCompile Include="sysapi.cpp" />
     <ClCompile Include="vmmngr_pde.cpp" />
     <ClCompile Include="vmmngr_pte.cpp" />
   </ItemGroup>
@@ -115,6 +116,7 @@ call "build.bat"</Command>
     <ClInclude Include="exception.h" />
     <ClInclude Include="mmngr_phys.h" />
     <ClInclude Include="mmngr_virtual.h" />
+    <ClInclude Include="sysapi.h" />
     <ClInclude Include="vmmngr_pde.h" />
     <ClInclude Include="vmmngr_pte.h" />
   </ItemGroup>
