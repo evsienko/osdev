@@ -82,14 +82,14 @@ void install_tss (uint32_t idx, uint16_t kernelSS, uint16_t kernelESP) {
 	memset ((void*) &TSS, 0, sizeof (tss_entry));
 
 	//! set stack and segments
-	TSS.ss0 = kernelSS;
+	TSS.ss0  = kernelSS;
 	TSS.esp0 = kernelESP;
-	TSS.cs=0x0b;
-	TSS.ss = 0x13;
-	TSS.es = 0x13;
-	TSS.ds = 0x13;
-	TSS.fs = 0x13;
-	TSS.gs = 0x13;
+	TSS.cs   = 0x0b;
+	TSS.ss   = 0x13;
+	TSS.es   = 0x13;
+	TSS.ds   = 0x13;
+	TSS.fs   = 0x13;
+	TSS.gs   = 0x13;
 
 	//! flush tss
 	flush_tss (idx * sizeof (gdt_descriptor));

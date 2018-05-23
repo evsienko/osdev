@@ -45,7 +45,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/Oy"
-				Optimization="1"
+				Optimization="0"
 				InlineFunctionExpansion="0"
 				EnableIntrinsicFunctions="false"
 				FavorSizeOrSpeed="0"
@@ -83,7 +83,7 @@
 				GenerateManifest="false"
 				IgnoreAllDefaultLibraries="true"
 				DelayLoadDLLs=""
-				GenerateMapFile="false"
+				GenerateMapFile="true"
 				MapFileName="Kernel.map"
 				SubSystem="3"
 				Driver="1"

@@ -71,7 +71,8 @@ void interrupt _cdecl invalid_opcode_fault (unsigned int cs, unsigned int eip, u
 
 	intstart ();
 	kernel_panic ("Invalid opcode");
-	for (;;);
+	_asm cli
+	for (;;) _asm hlt;
 }
 
 //! device not available
@@ -129,20 +130,17 @@ void _cdecl page_fault (uint32_t err,uint32_t eflags,uint32_t cs,uint32_t eip) {
 	_asm	cli
 	_asm	sub		ebp, 4
 
-//	int faultAddr=0;
+	int faultAddr=0;
 
-//	_asm {
-//		mov eax, cr2
-//		mov [faultAddr], eax
-//	}
+	_asm {
+		mov eax, cr2
+		mov [faultAddr], eax
+	}
 
-//	kernel_panic ("Page Fault at 0x%x:0x%x refrenced memory at 0x%x",
-//		cs, eip, faultAddr);
-//	kernel_panic ("Page Fault");
+	kernel_panic ("Page Fault at 0x%x:0x%x refrenced memory at 0x%x",
+		cs, eip, faultAddr);
+	kernel_panic ("Page Fault");
 	for (;;);
-	_asm popad
-	_asm sti
-	_asm iretd
 }
 
 //! Floating Point Unit (FPU) error

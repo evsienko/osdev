@@ -4,12 +4,12 @@
 #include "mmngr_virtual.h"
 #include "task.h"
 
-#define MAX_SYSCALL 2
+#define MAX_SYSCALL 1 /* 2 */
 
 static void* _syscalls[] = {
 
 	DebugPrintf,
-	TerminateProcess
+	0, /*TerminateProcess */
 };
 
 _declspec(naked)

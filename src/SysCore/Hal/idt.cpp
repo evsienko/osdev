@@ -14,9 +14,7 @@
 #include "idt.h"
 #include <string.h>
 #include <hal.h>
-#ifdef _DEBUG
 #include "..\Kernel\DebugDisplay.h"
-#endif
 
 //============================================================================
 //    IMPLEMENTATION PRIVATE DEFINITIONS / ENUMERATIONS / SIMPLE TYPEDEFS
@@ -83,21 +81,11 @@ static void idt_install () {
 #endif
 }
 
-
 //! default handler to catch unhandled system interrupts.
 static void i86_default_handler () {
 
-	//! clear interrupts to prevent double fault
 	disable ();
-
-	//! print debug message and halt
-#ifdef _DEBUG
-	DebugClrScr (0x18);
-	DebugGotoXY (0,0);
-	DebugSetColor (0x1e);
-	DebugPrintf ("*** [i86 Hal] i86_default_handler: Unhandled Exception");
-#endif
-
+	DebugPrintf ("*** i86_default_handler");
 	for(;;);
 }
 
@@ -114,6 +102,8 @@ idt_descriptor* i86_get_ir (uint32_t i) {
 	return &_idt[i];
 }
 
+extern "C"
+int DebugPrintf (const char* str, ...);
 
 //! installs a new interrupt handler
 int i86_install_ir (uint32_t i, uint16_t flags, uint16_t sel, I86_IRQ_HANDLER irq) {
@@ -133,7 +123,6 @@ int i86_install_ir (uint32_t i, uint16_t flags, uint16_t sel, I86_IRQ_HANDLER ir
 	_idt[i].reserved	=	0;
 	_idt[i].flags		=	uint8_t(flags);
 	_idt[i].sel			=	sel;
-
 	return	0;
 }
 

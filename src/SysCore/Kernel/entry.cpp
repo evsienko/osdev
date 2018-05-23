@@ -14,7 +14,7 @@ extern void __cdecl  InitializeConstructors ();
 extern void __cdecl  Exit ();
 
 //! main
-extern int _cdecl kmain (multiboot_info* bootinfo);
+extern void _cdecl kmain (multiboot_info* bootinfo);
 
 //! kernel entry point is called by boot loader
 void __cdecl  kernel_entry (multiboot_info* bootinfo) {
@@ -34,16 +34,5 @@ void __cdecl  kernel_entry (multiboot_info* bootinfo) {
 
 	InitializeConstructors();
 	kmain (bootinfo);
-	Exit ();
-
-	DebugPrintf ("\nkernel_entry: shutdown complete. Halting system");
-
-#ifdef ARCH_X86
-	_asm {
-		cli
-		hlt
-	}
-#endif
-
 	for (;;);
 }

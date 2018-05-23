@@ -153,9 +153,7 @@ void vmmngr_free_page (pt_entry* e) {
 
 void vmmngr_initialize () {
 
-	//taken from chapter 21
-
-	   //! allocate default page table
+   //! allocate default page table
    ptable* table = (ptable*) pmmngr_alloc_block ();
    if (!table)
       return;
@@ -174,6 +172,7 @@ void vmmngr_initialize () {
       //! create a new page
       pt_entry page=0;
       pt_entry_add_attrib (&page, I86_PTE_PRESENT);
+	  pt_entry_add_attrib (&page, I86_PTE_USER);
       pt_entry_set_frame (&page, frame);
 
       //! ...and add it to the page table
@@ -186,6 +185,7 @@ void vmmngr_initialize () {
       //! create a new page
       pt_entry page=0;
       pt_entry_add_attrib (&page, I86_PTE_PRESENT);
+	  pt_entry_add_attrib (&page, I86_PTE_USER);
       pt_entry_set_frame (&page, frame);
 
       //! ...and add it to the page table
@@ -204,11 +204,13 @@ void vmmngr_initialize () {
    pd_entry* entry = &dir->m_entries [PAGE_DIRECTORY_INDEX (0xc0000000) ];
    pd_entry_add_attrib (entry, I86_PDE_PRESENT);
    pd_entry_add_attrib (entry, I86_PDE_WRITABLE);
+   pd_entry_add_attrib (entry, I86_PDE_USER);
    pd_entry_set_frame (entry, (physical_addr)table);
 
    pd_entry* entry2 = &dir->m_entries [PAGE_DIRECTORY_INDEX (0x00000000) ];
    pd_entry_add_attrib (entry2, I86_PDE_PRESENT);
    pd_entry_add_attrib (entry2, I86_PDE_WRITABLE);
+   pd_entry_add_attrib (entry2, I86_PDE_USER);
    pd_entry_set_frame (entry2, (physical_addr)table2);
 
    //! store current PDBR

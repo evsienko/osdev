@@ -9,6 +9,7 @@
 //============================================================================
 
 #include <string.h>
+#include <hal.h>
 #include "fsys.h"
 #include "image.h"
 #include "mmngr_virtual.h"
@@ -32,14 +33,30 @@
 //============================================================================
 //    IMPLEMENTATION REQUIRED EXTERNAL REFERENCES (AVOID)
 //============================================================================
+
+extern void tss_set_stack (uint16_t kernelSS, uint16_t kernelESP);
+
 //============================================================================
 //    IMPLEMENTATION PRIVATE DATA
 //============================================================================
 
+#define PROC_MAX        10
+#define THREAD_MAX      10
 #define PROC_INVALID_ID -1
-static process _proc = {
-	PROC_INVALID_ID,0,0,0,0
-};
+#define TIME_QUANTUM     1
+
+/* we limit number of processes and threads since we dont
+have a proper heap allocator. This should be dynamically
+allocated from non-paged pool. Note MAX_THREAD is different;
+MAX_THREAD is per process, THREAD_MAX is max threads allowed
+in system. */
+
+thread   _readyQueue  [THREAD_MAX];
+int      _queue_last, _queue_first;
+thread   _idleThread;
+thread*  _currentTask;
+thread   _currentThreadLocal;
+process  _processList [PROC_MAX];
 
 //============================================================================
 //    INTERFACE DATA
@@ -47,352 +64,558 @@ static process _proc = {
 //============================================================================
 //    IMPLEMENTATION PRIVATE FUNCTION PROTOTYPES
 //============================================================================
-
 //============================================================================
 //    IMPLEMENTATION PRIVATE FUNCTIONS
 //============================================================================
 
-/**
-* Return current process
-* \ret Process
-*/
-process* getCurrentProcess() {
-	return &_proc;
+/*** PROCESS LIST ***********************************/
+
+/* add process to list. */
+process* add_process(process p) {
+	for (int c = 0; c < PROC_MAX; c++) {
+		/* id's of -1 are free. */
+		if (_processList[c].id != PROC_INVALID_ID) {
+			_processList[c] = p;
+			return &_processList[c];
+		}
+	}
+	return 0;
 }
 
-/**
-* Map kernel space into address space
-* \param addressSpace Page directory
-*/
-void mapKernelSpace (pdirectory* addressSpace) {
-	uint32_t virtualAddr;
-	uint32_t physAddr;
-	/*
-		default flags. Note USER bit not set to prevent user mode access
-	*/
-	int flags = I86_PTE_PRESENT|I86_PTE_WRITABLE;
-	/*
-		map kernel stack space (at idenitity mapped 0x8000-0x9fff)
-	*/
-	vmmngr_mapPhysicalAddress (addressSpace, 0x8000, 0x8000, flags);
-	vmmngr_mapPhysicalAddress (addressSpace, 0x9000, 0x9000, flags);
-	/*
-		map kernel image (7 pages at physical 1MB, virtual 3GB)
-	*/
-	virtualAddr = 0xc0000000;
-	physAddr    = 0x100000;
-	for (uint32_t i=0; i<10; i++) {
-		vmmngr_mapPhysicalAddress (addressSpace,
-			virtualAddr+(i*PAGE_SIZE),
-			physAddr+(i*PAGE_SIZE),
-			flags);
+/* remove process from list. */
+void remove_process(process p) {
+	for (int c = 0; c < PROC_MAX; c++) {
+		if (_processList[c].id == p.id) {
+			/* id's of -1 are free. */
+			_processList[c].id = PROC_INVALID_ID;
+			return;
+		}
 	}
-	/*
-		map display memory for debug minidriver
-		idenitity mapped 0xa0000-0xBF000.
-		Note:
-			A better alternative is to have a driver associated
-			with the physical memory range map it. This should be automatic;
-			through an IO manager or driver manager.
-	*/
-	virtualAddr = 0xa0000;
-	physAddr = 0xa0000;
-	for (uint32_t i=0; i<31; i++) {
-		vmmngr_mapPhysicalAddress (addressSpace,
-			virtualAddr+(i*PAGE_SIZE),
-			physAddr+(i*PAGE_SIZE),
-			flags);
-	}
-
-	/* map page directory itself into its address space */
-	vmmngr_mapPhysicalAddress (addressSpace, (uint32_t) addressSpace,
-			(uint32_t) addressSpace, I86_PTE_PRESENT|I86_PTE_WRITABLE);
 }
 
-/**
-* Validate image
-* \param image Base of image
-* \ret Status code
+/* init process list. */
+void init_process_list() {
+	for (int c = 0; c < PROC_MAX; c++)
+		_processList[c].id = PROC_INVALID_ID;
+}
+
+/*** READY QUEUE ************************************/
+
+/* clear queue. */
+void clear_queue() {
+	_queue_first = 0;
+	_queue_last  = 0;
+}
+
+/* insert thread. */
+bool queue_insert(thread t) {
+	_readyQueue[_queue_last % THREAD_MAX] = t;
+	_queue_last++;
+	return true;
+}
+
+/* remove thread. */
+thread queue_remove() {
+	thread t;
+	t = _readyQueue[_queue_first % THREAD_MAX];
+	_queue_first++;
+	return t;
+}
+
+/* get top of queue. */
+thread queue_get() {
+	return _readyQueue[_queue_first % THREAD_MAX];
+}
+
+/*** SCHEDULER *****************************************/
+
+void _cdecl     scheduler_isr ();
+void (_cdecl*   old_isr)      ();
+void            idle_task     ();
+
+/* schedule new task to run. */
+void schedule() {
+
+	/* force a task switch. */
+	__asm int 33
+}
+
+/* set thread state flags. */
+void thread_set_state(thread* t, uint32_t flags) {
+
+	/* set flags. */
+	t->state |= flags;
+}
+
+/* remove thread state flags. */
+void thread_remove_state(thread* t, uint32_t flags) {
+
+	/* remove flags. */
+	t->state &= ~flags;
+}
+
+/* PUBLIC definition. */
+void thread_sleep(uint32_t ms) {
+
+	/* go to sleep. */
+	thread_set_state(_currentTask,THREAD_BLOCK_SLEEP);
+	_currentTask->sleepTimeDelta = ms;
+	schedule();
+}
+
+/* PUBLIC definition. */
+void thread_wake() {
+
+	/* wake up. */
+	thread_remove_state(_currentTask,THREAD_BLOCK_SLEEP);
+	_currentTask->sleepTimeDelta = 0;
+}
+
+/* executes thread. */
+void thread_execute(thread t) {
+	_asm{
+		mov esp, t.esp
+		pop gs
+		pop fs
+		pop es
+		pop ds
+		popad
+		iretd
+	}
+}
+
+/*
+	Note - the kernel mode stack should be allocated from non-paged pool.
+	We have not covered memory allocators yet, so we are limited in what we
+	can do. What we decided on was to reserve kernel stack sizes to 4K per
+	thread, base at 0xe0000000 in the address space.
 */
-int validateImage (void* image) {
+
+/* create a new kernel space stack. */
+int _kernel_stack_index = 0;
+void* create_kernel_stack() {
+
+	physical_addr       p;
+	virtual_addr        location;
+	void*               ret;
+
+	/* we are reserving this area for 4k kernel stacks. */
+#define KERNEL_STACK_ALLOC_BASE 0xe0000000
+
+	/* allocate a 4k frame for the stack. */
+	p = (physical_addr) pmmngr_alloc_block();
+	if (!p)
+		return 0;
+
+	/* next free 4k memory block. */
+	location = KERNEL_STACK_ALLOC_BASE + _kernel_stack_index * PAGE_SIZE;
+
+	/* map it into kernel space. */
+	vmmngr_mapPhysicalAddress (vmmngr_get_directory(), location, p, 3);
+
+	/* we are returning top of stack. */
+	ret = (void*) (location + PAGE_SIZE);
+
+	/* prepare to allocate next 4k if we get called again. */
+	_kernel_stack_index++;
+
+	/* and return top of stack. */
+	return ret;
+}
+
+/* creates thread. */
+thread  thread_create (void (_cdecl *entry)(void), uint32_t esp, bool is_kernel) {
+
+	trapFrame* frame;
+	thread t;
+
+	/* for chapter 25, this paramater is ignored. */
+	is_kernel=is_kernel;
+
+	/* kernel and user selectors. */
+#define USER_DATA   0x23
+#define USER_CODE   0x1b
+#define KERNEL_DATA 0x10
+#define KERNEL_CODE 8
+
+	/* adjust stack. We are about to push data on it. */
+	esp -= sizeof (trapFrame);
+
+	/* initialize task frame. */
+	frame = ((trapFrame*) esp);
+	frame->flags = 0x202;
+	frame->eip   = (uint32_t)entry;
+	frame->ebp   = 0;
+	frame->esp   = 0;
+	frame->edi   = 0;
+	frame->esi   = 0;
+	frame->edx   = 0;
+	frame->ecx   = 0;
+	frame->ebx   = 0;
+	frame->eax   = 0;
+
+	/* set up segment selectors. */
+	frame->cs    = KERNEL_CODE;
+	frame->ds    = KERNEL_DATA;
+	frame->es    = KERNEL_DATA;
+	frame->fs    = KERNEL_DATA;
+	frame->gs    = KERNEL_DATA;
+	t.ss         = KERNEL_DATA;
+
+	/* set stack. */
+	t.esp = esp;
+
+	/* ignore other fields. */
+	t.parent   = 0;
+	t.priority = 0;
+	t.state    = THREAD_RUN;
+	t.sleepTimeDelta = 0;
+	return t;
+}
+
+/* execute idle thread. */
+void execute_idle() {
+
+	/* just run idle thread. */
+	thread_execute (_idleThread);
+}
+
+/* initialize scheduler. */
+void scheduler_initialize(void) {
+
+	/* clear ready queue. */
+	clear_queue();
+
+	/* clear process list. */
+	init_process_list();
+
+	/* create idle thread and add it. */
+	_idleThread = thread_create(idle_task, (uint32_t) create_kernel_stack(), true);
+
+	/* set current thread to idle task and add it. */
+	_currentThreadLocal = _idleThread;
+	_currentTask        = &_currentThreadLocal;
+	queue_insert(_idleThread);
+
+	/* register isr */
+	old_isr = getvect(32);
+	setvect (32, scheduler_isr, 0x80);
+}
+
+/* schedule next task. */
+void dispatch () {
+
+	/* We do Round Robin here, just remove and insert. */
+next_thread:
+	queue_remove();
+	queue_insert(_currentThreadLocal);
+	_currentThreadLocal = queue_get();
+
+	/* make sure this thread is not blocked. */
+	if (_currentThreadLocal.state & THREAD_BLOCK_STATE) {
+
+		/* adjust time delta. */
+		if (_currentThreadLocal.sleepTimeDelta > 0)
+			_currentThreadLocal.sleepTimeDelta--;
+
+		/* should we wake thread? */
+		if (_currentThreadLocal.sleepTimeDelta == 0) {
+			thread_wake();
+			return;
+		}
+
+		/* not yet, go to next thread. */
+		goto next_thread;
+	}
+}
+
+/* gets called for each clock tick. */
+void _cdecl scheduler_tick () {
+
+	/* just run dispatcher. */
+	dispatch();
+}
+
+/* Timer ISR called by PIT. */
+__declspec(naked) void _cdecl scheduler_isr () {
+	_asm {
+		;
+		; clear interrupts and save context.
+		;
+		cli
+		pushad
+		;
+		; if no current task, just return.
+		;
+		mov eax, [_currentTask]
+		cmp eax, 0
+		jz  interrupt_return
+		;
+		; save selectors.
+		;
+		push ds
+		push es
+		push fs
+		push gs
+		;
+		; switch to kernel segments.
+		;
+		mov ax, 0x10
+		mov ds, ax
+		mov es, ax
+		mov fs, ax
+		mov gs, ax
+		;
+		; save esp.
+		;
+		mov eax, [_currentTask]
+		mov [eax], esp
+		;
+		; call scheduler.
+		;
+		call scheduler_tick
+		;
+		; restore esp.
+		;
+		mov eax, [_currentTask]
+		mov esp, [eax]
+		;
+		; Call tss_set_stack (kernelSS, kernelESP).
+		; This code will be needed later for user tasks.
+		;
+		push dword ptr [eax+8]
+		push dword ptr [eax+12]
+		call tss_set_stack
+		add esp, 8
+		;
+		; send EOI and restore context.
+		;
+		pop gs
+		pop fs
+		pop es
+		pop ds
+interrupt_return:
+		;
+		; test if we need to call old ISR.
+		;
+		mov eax, old_isr
+		cmp eax, 0
+		jne chain_interrupt
+		;
+		; if old_isr is null, send EOI and return.
+		;
+		mov al,0x20
+        out 0x20,al
+		popad
+		iretd
+		;
+		; if old_isr is valid, jump to it. This calls
+		; our PIT timer interrupt handler.
+		;
+chain_interrupt:
+		popad
+		jmp old_isr
+	}
+}
+
+/* idle thread. */
+void idle_task() {
+
+	/* loop forever and yield to cpu. */
+	while(1) _asm pause;
+}
+
+
+/*** IMAGE LOADING *********************************/
+
+
+/* checks to make sure image is valid. */
+bool validate_image (void* image) {
+
     IMAGE_DOS_HEADER* dosHeader = 0;
     IMAGE_NT_HEADERS* ntHeaders = 0;
 
     /* validate program file */
     dosHeader = (IMAGE_DOS_HEADER*) image;
-    if (dosHeader->e_magic != IMAGE_DOS_SIGNATURE) {
-            return 0;
-    }
-    if (dosHeader->e_lfanew == 0) {
-            return 0;
-    }
+    if (dosHeader->e_magic != IMAGE_DOS_SIGNATURE)
+            return false;
+    if (dosHeader->e_lfanew == 0)
+            return false;
 
     /* make sure header is valid */
     ntHeaders = (IMAGE_NT_HEADERS*)(dosHeader->e_lfanew + (uint32_t)image);
-    if (ntHeaders->Signature != IMAGE_NT_SIGNATURE) {
-            return 0;
-    }
+    if (ntHeaders->Signature != IMAGE_NT_SIGNATURE)
+            return false;
 
     /* only supporting for i386 archs */
-    if (ntHeaders->FileHeader.Machine != IMAGE_FILE_MACHINE_I386) {
-            return 0;
-    }
+    if (ntHeaders->FileHeader.Machine != IMAGE_FILE_MACHINE_I386)
+            return false;
 
     /* only support 32 bit executable images */
     if (! (ntHeaders->FileHeader.Characteristics &
             (IMAGE_FILE_EXECUTABLE_IMAGE | IMAGE_FILE_32BIT_MACHINE))) {
-            return 0;
-    }
-    /*
-            Note: 1st 4 MB remains idenitity mapped as kernel pages as it contains
-            kernel stack and page directory. If you want to support loading below 1MB,
-            make sure to move these into kernel land
-    */
-    if ( (ntHeaders->OptionalHeader.ImageBase < 0x400000)
-            || (ntHeaders->OptionalHeader.ImageBase > 0x80000000)) {
-            return 0;
+            return false;
     }
 
     /* only support 32 bit optional header format */
-    if (ntHeaders->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
-            return 0;
+    if (ntHeaders->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR32_MAGIC)
+            return false;
+	return true;
+}
+
+/* load program file into memory. */
+bool load_image(char* appname, pdirectory* space, virtual_addr* image_base, uint32_t* image_size, virtual_addr* entry) {
+
+    unsigned char     buf[512];
+    IMAGE_DOS_HEADER* dosHeader;
+    IMAGE_NT_HEADERS* ntHeaders;
+    FILE              file;
+	unsigned int      i;
+	unsigned char*    memory;
+
+    /* open file */
+    file = volOpenFile (appname);
+    if (file.flags == FS_INVALID)
+            return false;
+    if (( file.flags & FS_DIRECTORY ) == FS_DIRECTORY)
+            return false;
+
+    /* read 512 bytes into buffer */
+    volReadFile ( &file, buf, 512);
+	if (! validate_image (buf)) {
+		volCloseFile ( &file );
+		return false;
+	}
+    dosHeader = (IMAGE_DOS_HEADER*)buf;
+    ntHeaders = (IMAGE_NT_HEADERS*)(dosHeader->e_lfanew + (uint32_t)buf);
+
+	/* allocate frame for the block we are about to read. */
+    memory = (unsigned char*)pmmngr_alloc_block();
+
+	/* copy the 512 bytes we just read and rest of page. */
+	memcpy (memory, buf, 512);
+	for (i=1; i <= ntHeaders->OptionalHeader.SizeOfImage/512; i++) {
+            if (file.eof == 1)
+                    break;
+            volReadFile ( &file, memory+512*i, 512);
     }
-	return 1;
-}
 
-//============================================================================
-//    INTERFACE FUNCTIONS
-//============================================================================
+	/* map first 4k block. */
+	vmmngr_mapPhysicalAddress (space,ntHeaders->OptionalHeader.ImageBase,
+                (uint32_t) memory,I86_PTE_PRESENT|I86_PTE_WRITABLE|I86_PTE_USER);
 
-/**
-* Create process
-* \param appname Application file name
-* \ret Status code
-*/
-int createProcess (char* appname) {
+	/* load rest of image */
+    i = 1;
+    while (file.eof != 1) {
 
-        IMAGE_DOS_HEADER* dosHeader = 0;
-        IMAGE_NT_HEADERS* ntHeaders = 0;
-        FILE file;
-        pdirectory* addressSpace = 0;
-        process* proc = 0;
-        thread* mainThread = 0;
-        unsigned char* memory = 0;
-        unsigned char buf[512];
-        uint32_t i = 0;
+		/* allocate new frame */
+		unsigned char* cur = (unsigned char*)pmmngr_alloc_block();
 
-        /* open file */
-        file = volOpenFile (appname);
-        if (file.flags == FS_INVALID)
-                return 0;
-        if (( file.flags & FS_DIRECTORY ) == FS_DIRECTORY)
-                return 0;
-
-        /* read 512 bytes into buffer */
-        volReadFile ( &file, buf, 512);
-		if (! validateImage (buf)) {
-			volCloseFile ( &file );
-			return 0;
+		/* read block */
+		int curBlock = 0;
+		for (curBlock = 0; curBlock < 8; curBlock++) {
+				if (file.eof == 1)
+						break;
+				volReadFile ( &file, cur+512*curBlock, 512);
 		}
-        dosHeader = (IMAGE_DOS_HEADER*)buf;
-        ntHeaders = (IMAGE_NT_HEADERS*)(dosHeader->e_lfanew + (uint32_t)buf);
 
-        /* get process virtual address space */
-//        addressSpace = vmmngr_createAddressSpace ();
-		addressSpace = vmmngr_get_directory ();
-		if (!addressSpace) {
-                volCloseFile (&file);
-                return 0;
-        }
-		/*
-			map kernel space into process address space.
-			Only needed if creating new address space
-		*/
-		//mapKernelSpace (addressSpace);
+		/* map page into process address space */
+		vmmngr_mapPhysicalAddress (space, ntHeaders->OptionalHeader.ImageBase + i*4096,
+				(uint32_t) cur, I86_PTE_PRESENT|I86_PTE_WRITABLE|I86_PTE_USER);
+		i++;
+    }
 
-        /* create PCB */
-        proc = getCurrentProcess();
-        proc->id            = 1;
-        proc->pageDirectory = addressSpace;
-        proc->priority      = 1;
-        proc->state         = PROCESS_STATE_ACTIVE;
-        proc->threadCount   = 1;
+	/* output paramaters. */
+	if (image_base)
+		*image_base = ntHeaders->OptionalHeader.ImageBase;
+	if (image_size)
+		*image_size = ntHeaders->OptionalHeader.SizeOfImage;
+	if (entry)
+		*entry = ntHeaders->OptionalHeader.AddressOfEntryPoint;
 
-		/* create thread descriptor */
-        mainThread               = &proc->threads[0];
-        mainThread->kernelStack  = 0;
-        mainThread->parent       = proc;
-        mainThread->priority     = 1;
-        mainThread->state        = PROCESS_STATE_ACTIVE;
-        mainThread->initialStack = 0;
-        mainThread->stackLimit   = (void*) ((uint32_t) mainThread->initialStack + 4096);
-		mainThread->imageBase    = ntHeaders->OptionalHeader.ImageBase;
-		mainThread->imageSize    = ntHeaders->OptionalHeader.SizeOfImage;
-        memset (&mainThread->frame, 0, sizeof (trapFrame));
-        mainThread->frame.eip    = ntHeaders->OptionalHeader.AddressOfEntryPoint
-                + ntHeaders->OptionalHeader.ImageBase;
-        mainThread->frame.flags  = 0x200;
-
-        /* copy our 512 block read above and rest of 4k block */
-        memory = (unsigned char*)pmmngr_alloc_block();
-        memset (memory, 0, 4096);
-        memcpy (memory, buf, 512);
-
-		/* load image into memory */
-		for (i=1; i <= mainThread->imageSize/512; i++) {
-                if (file.eof == 1)
-                        break;
-                volReadFile ( &file, memory+512*i, 512);
-        }
-
-        /* map page into address space */
-        vmmngr_mapPhysicalAddress (proc->pageDirectory,
-                ntHeaders->OptionalHeader.ImageBase,
-                (uint32_t) memory,
-                I86_PTE_PRESENT|I86_PTE_WRITABLE|I86_PTE_USER);
-
-		/* load and map rest of image */
-        i = 1;
-        while (file.eof != 1) {
-                /* allocate new frame */
-                unsigned char* cur = (unsigned char*)pmmngr_alloc_block();
-                /* read block */
-                int curBlock = 0;
-                for (curBlock = 0; curBlock < 8; curBlock++) {
-                        if (file.eof == 1)
-                                break;
-                        volReadFile ( &file, cur+512*curBlock, 512);
-                }
-                /* map page into process address space */
-                vmmngr_mapPhysicalAddress (proc->pageDirectory,
-                        ntHeaders->OptionalHeader.ImageBase + i*4096,
-                        (uint32_t) cur,
-                        I86_PTE_PRESENT|I86_PTE_WRITABLE|I86_PTE_USER);
-                i++;
-        }
-
-		/* Create userspace stack (process esp=0x100000) */
-		void* stack =
-			(void*) (ntHeaders->OptionalHeader.ImageBase
-				+ ntHeaders->OptionalHeader.SizeOfImage + PAGE_SIZE);
-		void* stackPhys = (void*) pmmngr_alloc_block ();
-
-		/* map user process stack space */
-		vmmngr_mapPhysicalAddress (addressSpace,
-				(uint32_t) stack,
-				(uint32_t) stackPhys,
-				I86_PTE_PRESENT|I86_PTE_WRITABLE|I86_PTE_USER);
-
-		/* final initialization */
-		mainThread->initialStack = stack;
-        mainThread->frame.esp    = (uint32_t)mainThread->initialStack;
-        mainThread->frame.ebp    = mainThread->frame.esp;
-
-		/* close file and return process ID */
-		volCloseFile(&file);
-        return proc->id;
+	/* close file. */
+	volCloseFile(&file);
+	return true;
 }
 
-/**
-* Execute process
-*/
-void executeProcess () {
-        process* proc = 0;
-        int entryPoint = 0;
-        unsigned int procStack = 0;
+/* clones kernel space into new address space. */
+void clone_kernel_space(pdirectory* out) {
 
-        /* get running process */
-        proc = getCurrentProcess();
-		if (proc->id==PROC_INVALID_ID)
-			return;
-        if (!proc->pageDirectory)
-			return;
+	/* get current process directory. */
+	pdirectory* proc = vmmngr_get_directory();
 
-        /* get esp and eip of main thread */
-        entryPoint = proc->threads[0].frame.eip;
-        procStack  = proc->threads[0].frame.esp;
-
-        /* switch to process address space */
-        __asm cli
-        pmmngr_load_PDBR ((physical_addr)proc->pageDirectory);
-
-        /* execute process in user mode */
-        __asm {
-                mov     ax, 0x23        ; user mode data selector is 0x20 (GDT entry 3). Also sets RPL to 3
-                mov     ds, ax
-                mov     es, ax
-                mov     fs, ax
-                mov     gs, ax
-				;
-				; create stack frame
-				;
-				push   0x23				; SS, notice it uses same selector as above
-				push   [procStack]		; stack
-				push    0x200			; EFLAGS
-				push    0x1b			; CS, user mode code selector is 0x18. With RPL 3 this is 0x1b
-				push    [entryPoint]	; EIP
-				iretd
-        }
+	/* copy kernel page tables into this new page directory.
+	Recall that KERNEL SPACE is 0xc0000000, which starts at
+	entry 768. */
+	memcpy(&out->m_entries[768], &proc->m_entries[768], 256 * sizeof (pd_entry));
 }
 
-/* kernel command shell */
-extern void run ();
+/* create new address space. */
+pdirectory* create_address_space (void) {
 
-/**
-* TerminateProcess system call
-*/
-extern "C" {
-void TerminateProcess () {
-	process* cur = &_proc;
-	if (cur->id==PROC_INVALID_ID)
-		return;
+	pdirectory* space;
 
-	/* release threads */
-	int i=0;
-	thread* pThread = &cur->threads[i];
+	/* allocate from PFN Bitmap. */
+	space =  (pdirectory*) pmmngr_alloc_block ();
 
-	/* get physical address of stack */
-	void* stackFrame = vmmngr_getPhysicalAddress (cur->pageDirectory,
-		(uint32_t) pThread->initialStack); 
-
-	/* unmap and release stack memory */
-	vmmngr_unmapPhysicalAddress (cur->pageDirectory, (uint32_t) pThread->initialStack);
-	pmmngr_free_block (stackFrame);
-
-	/* unmap and release image memory */
-	for (uint32_t page = 0; page < pThread->imageSize/PAGE_SIZE; page++) {
-		uint32_t phys = 0;
-		uint32_t virt = 0;
-
-		/* get virtual address of page */
-		virt = pThread->imageBase + (page * PAGE_SIZE);
-
-		/* get physical address of page */
-		phys = (uint32_t) vmmngr_getPhysicalAddress (cur->pageDirectory, virt);
-
-		/* unmap and release page */
-		vmmngr_unmapPhysicalAddress (cur->pageDirectory, virt);
-		pmmngr_free_block ((void*)phys);
-	}
-
-	/* restore kernel selectors */
-	__asm {
-		cli
-		mov eax, 0x10
-		mov ds, ax
-		mov es, ax
-		mov fs, ax
-		mov gs, ax
-		sti
-	}
-
-	/* return to kernel command shell */
-	run ();
-
-	DebugPrintf ("\nExit command recieved; demo halted");
-	for (;;);
+	/* clear page directory and clone kernel space. */
+	vmmngr_pdirectory_clear(space);
+	clone_kernel_space(space);
+	return space;
 }
-} // extern "C"
+
+/* creates user stack for main thread. */
+bool create_user_stack(pdirectory* space) {
+
+	/* this will call our address space allocator
+	to reserve area in user space. Until then,
+	return error. */
+
+	return false;
+}
+
+/* create process. */
+bool create_process(char* appname) {
+
+    pdirectory*    addressSpace;
+    process        pcb;
+	virtual_addr   base;
+	virtual_addr   entry;
+	uint32_t       size;
+
+	/* create new address space. */
+	addressSpace = create_address_space();
+
+	/* try to load image into it. */
+	if (!load_image (appname, addressSpace, &base, &size, &entry))
+		return false;
+
+	/* create stack space for main thread. */
+	if (!create_user_stack(addressSpace))
+		return false;
+
+	/* create process. */
+	pcb.imageBase     = 0;
+	pcb.pageDirectory = addressSpace;
+
+	/* create main thread. */
+	pcb.threadCount = 0;
+
+	/* add process. */
+	pcb.threads[0].parent = add_process(pcb);
+
+	/* schedule thread to run. */
+	queue_insert(pcb.threads[0]);
+	return true;
+}
+
+extern "C" void TerminateProcess () {
+
+	/* Chapter 25 does not run any external process.
+	Since threading and process management has been
+	rewritten for this and will be expanded more
+	in later chapters, this function has been removed. */
+}
 
 //============================================================================
 //    INTERFACE CLASS BODIES

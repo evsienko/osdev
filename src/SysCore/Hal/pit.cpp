@@ -61,19 +61,17 @@ void _cdecl i86_pit_irq ();
 //============================================================================
 
 //!	pit timer interrupt handler
-void _cdecl i86_pit_irq () {
-
-	_asm add esp, 12
-	_asm pushad
-
-	//! increment tick count
+__declspec(naked) void _cdecl i86_pit_irq () {
+	_asm {
+		pushad
+	}
 	_pit_ticks++;
-
-	//! tell hal we are done
-	interruptdone(0);
-
-	_asm popad
-	_asm iretd
+	_asm {
+		mov al,0x20
+        out 0x20,al
+		popad
+		iretd
+	}
 }
 
 //============================================================================
@@ -156,7 +154,6 @@ void _cdecl i86_pit_initialize () {
 	//! we are initialized
 	_pit_bIsInit = true;
 }
-
 
 //! test if pit interface is initialized
 bool _cdecl i86_pit_is_initialized () {
